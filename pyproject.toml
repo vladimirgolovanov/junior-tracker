@@ -1,0 +1,17 @@
+[project]
+name = "junior-tracker"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Vladimir Golovanov",email = "vladimirgolovanov@gmail.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi-users[sqlalchemy] (>=15.0.4,<16.0.0)",
+    "alembic (>=1.18.4,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
