@@ -1,16 +1,22 @@
 from typing import TypeVar, Generic, Type, Optional
 
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src import get_db
 from src.models.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
 
 class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType], db: AsyncSession):
+    def __init__(
+        self,
+        model: Type[ModelType],
+        db: AsyncSession = Depends(get_db),
+    ):
         self.db = db
         self.model: Type[ModelType] = model
 
