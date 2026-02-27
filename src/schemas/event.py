@@ -8,6 +8,7 @@ class Event(BaseModel):
     child_id: int
     event_type_id: int
     occurred_at: datetime
+    volume: int | None = None
 
 
 class EventCreate(Event):
@@ -15,4 +16,4 @@ class EventCreate(Event):
 
 
 class EventCreateInternal(EventCreate):
-    user_id: int
+    pass  # todo: remove

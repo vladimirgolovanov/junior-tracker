@@ -9,7 +9,7 @@ from src.models.base import Base
 
 if TYPE_CHECKING:
     from src.models.child import Child
-    from src.models import Event, APIKey
+    from src.models import APIKey
 
 
 class User(Base, SQLAlchemyBaseUserTable):
@@ -24,10 +24,6 @@ class User(Base, SQLAlchemyBaseUserTable):
         "Child",
         secondary="child_users",
         back_populates="users",
-    )
-    events: Mapped[list["Event"]] = relationship(
-        "Event",
-        back_populates="user",
     )
 
     api_keys: Mapped[list["APIKey"]] = relationship(

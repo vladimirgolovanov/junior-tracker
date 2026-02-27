@@ -29,6 +29,6 @@ async def create_event(
 ):
     event_internal = EventCreateInternal(
         **event.model_dump(),
-        user_id=user.id,
+        # user_id=user.id,
     )
     return await service.create(event_internal)

@@ -5,10 +5,12 @@ description = ""
 authors = [
     {name = "Vladimir Golovanov",email = "vladimirgolovanov@gmail.com"}
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "fastapi-users[sqlalchemy] (>=15.0.4,<16.0.0)",
-    "alembic (>=1.18.4,<2.0.0)"
+    "alembic (>=1.18.4,<2.0.0)",
+    "aio-pika (>=9.5.8,<10.0.0)",
+    "pytest (>=9.0.2,<10.0.0)"
 ]
 
 

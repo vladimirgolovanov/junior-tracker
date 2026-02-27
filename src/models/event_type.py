@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, ARRAY, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -9,5 +9,7 @@ class EventType(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String)
+    keywords: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    format: Mapped[str | None] = mapped_column(String, nullable=True)
 
     child_id: Mapped[int] = mapped_column(ForeignKey("childs.id"))
