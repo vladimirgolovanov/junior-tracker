@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, Type, Optional
+from typing import TypeVar, Generic, Type, Optional, Any
 
 from fastapi import Depends
 from pydantic import BaseModel
@@ -39,6 +39,12 @@ class BaseRepository(Generic[ModelType]):
 
     async def find(self, id: int) -> ModelType | None:
         result = await self.db.execute(select(self.model).where(self.model.id == id))
+        return result.scalar_one_or_none()
+
+    async def find_first_by_column(self, column: str, value: Any) -> ModelType | None:
+        result = await self.db.execute(
+            select(self.model).where(getattr(self.model, column) == value)
+        )
         return result.scalar_one_or_none()
 
     async def create(self, obj_in: BaseModel, **extra_fields) -> ModelType:

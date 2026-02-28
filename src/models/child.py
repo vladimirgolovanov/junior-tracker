@@ -24,6 +24,7 @@ class Child(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    tg_chat_id: Mapped[str] = mapped_column(String, nullable=True)
 
     users: Mapped[list["User"]] = relationship(
         "User",

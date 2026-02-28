@@ -13,6 +13,9 @@ class TgMsgParser:
     def __init__(self, event_types: list):
         self.event_types = event_types
 
+    def set_event_types(self, event_types: list):
+        self.event_types = event_types
+
     def parse_entry(
         self,
         line: str,

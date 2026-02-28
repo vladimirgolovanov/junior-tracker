@@ -1,15 +1,16 @@
 import asyncio
+from datetime import datetime
 import json
 import logging
 import signal
 
 import aio_pika
-from fastapi import Depends
 
 from src.config import settings
+from src.services.child import ChildService
 from src.services.event import EventService
 from src.services.tg_msg_parser import TgMsgParser
-from src.db_helper import get_db
+from src.db_helper import db_session, get_db
 
 PREFETCH_COUNT = 10
 
@@ -76,14 +77,18 @@ class RabbitWorker:
 
 async def parse_msg(
     body: dict,
-    parser: TgMsgParser = TgMsgParser(),
 ):
-    async with get_db() as db:
+    async for db in get_db():  # async with get_db() as db:
+        child_service = ChildService(db)
         event_service = EventService(db)
-        child_id = 1
-        user_id = 1
-        # event = parser.parse(body["text"], body["timestamp"], child_id)
-        events = parser.parse_entry(body["text"], body["timestamp"], child_id, user_id)
+        child = await child_service.get_by_chat_id(str(body["chat_id"]))
+        if not child:
+            logger.error(f"Child with chat_id {body['chat_id']} not found")
+            return
+        event_types = await event_service.get_event_types(child.id)
+        parser = TgMsgParser(event_types)
+        timestamp = datetime.fromisoformat(body["timestamp"])
+        events = parser.parse_entry(body["text"], timestamp, child.id)
         for event in events:
             await event_service.create(event)
 

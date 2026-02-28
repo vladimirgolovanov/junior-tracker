@@ -11,5 +11,8 @@ class EventType(Base):
     name: Mapped[str] = mapped_column(String)
     keywords: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     format: Mapped[str | None] = mapped_column(String, nullable=True)
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("event_types.id"), nullable=True
+    )
 
     child_id: Mapped[int] = mapped_column(ForeignKey("childs.id"))

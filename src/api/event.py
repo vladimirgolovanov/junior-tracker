@@ -24,11 +24,9 @@ async def events(
 @router.post("/")
 async def create_event(
     event: EventCreate,
-    user: CurrentUser,
     service: EventService = Depends(),
 ):
     event_internal = EventCreateInternal(
         **event.model_dump(),
-        # user_id=user.id,
     )
     return await service.create(event_internal)
