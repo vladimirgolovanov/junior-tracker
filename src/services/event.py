@@ -22,6 +22,12 @@ class EventService:
     ):
         return await self.repository.create(event)
 
+    async def update_or_create(
+        self,
+        event: EventCreateInternal,
+    ):
+        return await self.repository.update_or_create(event)
+
     async def get(self, child_id: int = None):
         # todo: check if child belongs to user
         filters = {"child_id": child_id}

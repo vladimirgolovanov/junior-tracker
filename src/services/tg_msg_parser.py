@@ -21,6 +21,7 @@ class TgMsgParser:
         line: str,
         timestamp: datetime,
         child_id: int,
+        message_id: int = None,
     ) -> list[EventCreateInternal]:
         line = line.strip().lower()
         results = []
@@ -39,6 +40,7 @@ class TgMsgParser:
                                         event_type_id=parsed_line["event_type_id"],
                                         occurred_at=parsed_line["occurred_at"],
                                         child_id=child_id,
+                                        tg_message_id=message_id,
                                     )
                                 )
                         case "metric":
@@ -52,6 +54,7 @@ class TgMsgParser:
                                         occurred_at=parsed_line["occurred_at"],
                                         volume=parsed_line["volume"],
                                         child_id=child_id,
+                                        tg_message_id=message_id,
                                     )
                                 )
                         case "described":
@@ -65,6 +68,7 @@ class TgMsgParser:
                                         description=parsed_line["description"],
                                         occurred_at=parsed_line["occurred_at"],
                                         child_id=child_id,
+                                        tg_message_id=message_id,
                                     )
                                 )
                         case "plain":
@@ -77,6 +81,7 @@ class TgMsgParser:
                                         event_type_id=parsed_line["event_type_id"],
                                         occurred_at=parsed_line["occurred_at"],
                                         child_id=child_id,
+                                        tg_message_id=message_id,
                                     )
                                 )
         return results

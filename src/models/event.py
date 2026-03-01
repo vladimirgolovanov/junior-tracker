@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, Integer, ForeignKey, DateTime
+from sqlalchemy import String, Integer, ForeignKey, DateTime, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
@@ -18,6 +18,7 @@ class Event(Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     volume: Mapped[int | None] = mapped_column(Integer, nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    tg_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     child_id: Mapped[int] = mapped_column(ForeignKey("childs.id"))
     child: Mapped["Child"] = relationship(back_populates="events")

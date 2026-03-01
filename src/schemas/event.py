@@ -9,6 +9,7 @@ class Event(BaseModel):
     event_type_id: int
     occurred_at: datetime
     volume: int | None = None
+    tg_message_id: int | None = None
 
 
 class EventCreate(Event):

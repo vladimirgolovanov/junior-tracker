@@ -88,9 +88,14 @@ async def parse_msg(
         event_types = await event_service.get_event_types(child.id)
         parser = TgMsgParser(event_types)
         timestamp = datetime.fromisoformat(body["timestamp"])
-        events = parser.parse_entry(body["text"], timestamp, child.id)
+        events = parser.parse_entry(
+            body["text"],
+            timestamp,
+            child.id,
+            body.get("message_id"),
+        )
         for event in events:
-            await event_service.create(event)
+            await event_service.update_or_create(event)
 
 
 async def main():
