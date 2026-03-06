@@ -118,3 +118,9 @@ class TestTgMsgParser:
 
         assert entries[0].occurred_at == datetime(2024, 12, 31, 23, 0)
         assert entries[1].occurred_at == datetime(2025, 1, 1, 0, 30)
+
+    def test_range_only_start(self, parser, base_date):
+        entries = parser.parse_entry("07:45-", base_date, 1, 1)
+        assert len(entries) == 1
+        assert entries[0].event_type_id == 1
+        assert entries[0].occurred_at == datetime(2025, 2, 22, 7, 45)

@@ -56,52 +56,6 @@ class BaseRepository(Generic[ModelType]):
         await self.db.refresh(db_obj)
         return db_obj
 
-    async def update_or_create(self, obj_in: BaseModel, **extra_fields) -> ModelType:
-        obj_data = obj_in.model_dump()
-        obj_data.update(extra_fields)
-
-        # Поля для поиска
-        tg_message_id = obj_data.get("tg_message_id")
-        child_id = obj_data.get("child_id")
-        event_type_id = obj_data.get("event_type_id")
-
-        # Ищем существующую запись
-        stmt = select(self.model).where(
-            self.model.tg_message_id == tg_message_id,
-            self.model.child_id == child_id,
-        )
-        result = await self.db.execute(stmt)
-        existing_objs = result.scalars().all()
-
-        db_obj = None
-        if existing_objs:
-            # Если запись одна, и event_type_id не 1 или 2
-            if len(existing_objs) == 1 and event_type_id not in (1, 2):
-                db_obj = existing_objs[0]
-            else:
-                # Несколько записей — берём ту, что совпадает по event_type_id
-                for obj in existing_objs:
-                    if obj.event_type_id == event_type_id:
-                        db_obj = obj
-                        break
-                # Если ни одна не совпала по event_type_id — берём первую
-                # и obj.event_type_id не 1 или 2
-                if db_obj is None and event_type_id not in (1, 2):
-                    db_obj = existing_objs[0]
-
-        if db_obj:
-            # UPDATE
-            for key, value in obj_data.items():
-                setattr(db_obj, key, value)
-        else:
-            # CREATE
-            db_obj = self.model(**obj_data)
-            self.db.add(db_obj)
-
-        await self.db.flush()
-        await self.db.refresh(db_obj)
-        return db_obj
-
     async def update(self, db_obj: ModelType, obj_in: BaseModel) -> Optional[ModelType]:
         await self.db.execute(
             update(self.model).where(self.model.id == id).values(**obj_in)

@@ -25,7 +25,7 @@ async def events(
     hours = total_minutes // 60
     minutes = total_minutes % 60
 
-    last_f = f"Formula {hours}:{minutes} {last_formula['volume']}"
+    last_f = f"Formula {hours}:{minutes:02d} {last_formula['volume']}"
 
     last_sleep = await service.last_sleep(child_id)
     sleep = next((r for r in last_sleep if r["event_type_id"] == 1), None)
@@ -36,11 +36,11 @@ async def events(
         total_minutes = int(awake_delta.total_seconds() // 60)
         hours = total_minutes // 60
         minutes = total_minutes % 60
-        awsl = f"Awake {hours}:{minutes}"
+        awsl = f"Awake {hours}:{minutes:02d}"
     else:
         total_minutes = int(sleep_delta.total_seconds() // 60)
         hours = total_minutes // 60
         minutes = total_minutes % 60
-        awsl = f"Sleep {hours}:{minutes}"
+        awsl = f"Sleep {hours}:{minutes:02d}"
 
     return PlainTextResponse(f"{awsl}\n{last_f}")

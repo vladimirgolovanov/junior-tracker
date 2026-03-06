@@ -26,6 +26,24 @@ class TgMsgParser:
         line = line.strip().lower()
         results = []
 
+        # for range events (only the first of its type) start can be passed as "12:23-"
+        # then edited to the normal range event line
+        range_event_type_ids = next(
+            (e["event_type_id"] for e in self.event_types if e["type"] == "range"), None
+        )
+        if range_event_type_ids and re.match(r"^\d{2}:\d{2}-$", line):
+            results.append(
+                EventCreateInternal(
+                    event_type_id=range_event_type_ids[0],
+                    occurred_at=datetime.combine(
+                        timestamp.date(),
+                        datetime.strptime(line[:-1], "%H:%M").time(),
+                    ),
+                    child_id=child_id,
+                    tg_message_id=message_id,
+                )
+            )
+
         for event_type in self.event_types:
             for keyword in event_type["keywords"]:
                 if keyword.lower() in line:

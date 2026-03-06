@@ -95,7 +95,7 @@ async def parse_msg(
             body.get("message_id"),
         )
         for event in events:
-            await event_service.update_or_create(event)
+            await event_service.update_or_create(event, len(events))
 
 
 async def main():
