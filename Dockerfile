@@ -2,7 +2,7 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-RUN pip install poetry
+RUN pip install poetry supervisor
 
 COPY pyproject.toml poetry.lock ./
 
@@ -11,5 +11,9 @@ RUN poetry install --no-interaction --no-root
 
 COPY . .
 
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 50081
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "50081"]
+CMD ["/entrypoint.sh"]
