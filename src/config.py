@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     db_echo: bool = False
     rabbit_url: str = ""
     queue_name: str = ""
+    sentry_dsn: str = ""
 
 
 settings = Settings()
