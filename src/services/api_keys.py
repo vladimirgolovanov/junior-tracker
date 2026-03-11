@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import Security, HTTPException, status, Depends
 from fastapi.security import APIKeyHeader
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src import get_db
@@ -20,7 +21,9 @@ async def get_api_key(
         )
 
     result = await db.execute(
-        select(APIKey).where(APIKey.key == api_key, APIKey.is_active == True)
+        select(APIKey)
+        .options(selectinload(APIKey.child))
+        .where(APIKey.key == api_key, APIKey.is_active == True)
     )
     key = result.scalar_one_or_none()
 
