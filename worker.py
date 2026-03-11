@@ -92,6 +92,7 @@ async def parse_msg(
             body["text"],
             timestamp,
             child.id,
+            child.timezone,
             body.get("message_id"),
         )
         for event in events:
