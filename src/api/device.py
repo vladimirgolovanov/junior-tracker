@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
+from zoneinfo import ZoneInfo
 from fastapi.responses import PlainTextResponse
 
 from fastapi import APIRouter, Depends
@@ -9,6 +10,8 @@ from src.services.event import EventService
 
 router = APIRouter()
 
+UTC = dt_timezone.utc
+
 
 @router.get("/last_events")
 async def events(
@@ -16,11 +19,14 @@ async def events(
     service: EventService = Depends(),
 ):
     child_id = api_key.child_id
+    tz = ZoneInfo(api_key.child.timezone) if api_key.child and api_key.child.timezone else UTC
+    now = datetime.now(UTC)
+
     last_formula = await service.last_formula(child_id)
     if not last_formula:
         return ""
 
-    delta = datetime.now() - last_formula["occurred_at"]
+    delta = now - last_formula["occurred_at"].astimezone(UTC)
     total_minutes = int(delta.total_seconds() // 60)
     hours = total_minutes // 60
     minutes = total_minutes % 60
@@ -29,9 +35,9 @@ async def events(
 
     last_sleep = await service.last_sleep(child_id)
     sleep = next((r for r in last_sleep if r["event_type_id"] == 1), None)
-    sleep_delta = datetime.now() - sleep["occurred_at"]
+    sleep_delta = now - sleep["occurred_at"].astimezone(UTC)
     awake = next((r for r in last_sleep if r["event_type_id"] == 2), None)
-    awake_delta = datetime.now() - awake["occurred_at"]
+    awake_delta = now - awake["occurred_at"].astimezone(UTC)
     if sleep_delta > awake_delta:
         total_minutes = int(awake_delta.total_seconds() // 60)
         hours = total_minutes // 60

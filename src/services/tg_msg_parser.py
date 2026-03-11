@@ -1,12 +1,10 @@
 import re
-from datetime import datetime, timedelta
-from re import match
-from typing import List, Any
+from datetime import datetime, timedelta, timezone as dt_timezone
+from zoneinfo import ZoneInfo
 
-from fastapi.params import Depends
-
-from src.repositories.event_type import EventTypeRepository
 from src.schemas.event import EventCreateInternal
+
+UTC = dt_timezone.utc
 
 
 class TgMsgParser:
@@ -21,10 +19,17 @@ class TgMsgParser:
         line: str,
         timestamp: datetime,
         child_id: int,
+        timezone: str,
         message_id: int = None,
     ) -> list[EventCreateInternal]:
         line = line.strip().lower()
         results = []
+
+        tz = ZoneInfo(timezone)
+        # Telegram timestamps are in child's local time; attach timezone so we can convert to UTC
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=tz)
+        local_ts = timestamp
 
         # for range events (only the first of its type) start can be passed as "12:23-"
         # then edited to the normal range event line
@@ -36,9 +41,10 @@ class TgMsgParser:
                 EventCreateInternal(
                     event_type_id=range_event_type_ids[0],
                     occurred_at=datetime.combine(
-                        timestamp.date(),
+                        local_ts.date(),
                         datetime.strptime(line[:-1], "%H:%M").time(),
-                    ),
+                        tzinfo=tz,
+                    ).astimezone(UTC),
                     child_id=child_id,
                     tg_message_id=message_id,
                 )
@@ -50,7 +56,7 @@ class TgMsgParser:
                     match (event_type["type"]):
                         case "range":
                             parsed_lines = self.get_range_events(
-                                event_type, keyword, line, timestamp
+                                event_type, keyword, line, local_ts, tz
                             )
                             for parsed_line in parsed_lines:
                                 results.append(
@@ -63,7 +69,7 @@ class TgMsgParser:
                                 )
                         case "metric":
                             parsed_lines = self.get_metric_events(
-                                event_type, keyword, line, timestamp
+                                event_type, keyword, line, local_ts, tz
                             )
                             for parsed_line in parsed_lines:
                                 results.append(
@@ -77,7 +83,7 @@ class TgMsgParser:
                                 )
                         case "described":
                             parsed_lines = self.get_described_events(
-                                event_type, keyword, line, timestamp
+                                event_type, keyword, line, local_ts, tz
                             )
                             for parsed_line in parsed_lines:
                                 results.append(
@@ -91,7 +97,7 @@ class TgMsgParser:
                                 )
                         case "plain":
                             parsed_lines = self.get_plain_events(
-                                event_type, keyword, line, timestamp
+                                event_type, keyword, line, local_ts, tz
                             )
                             for parsed_line in parsed_lines:
                                 results.append(
@@ -110,6 +116,7 @@ class TgMsgParser:
         keyword: str,
         line: str,
         timestamp: datetime,
+        tz: ZoneInfo,
     ) -> list[dict]:
         results = []
         range_match = re.match(
@@ -122,14 +129,18 @@ class TgMsgParser:
         if range_match:
             start_time = datetime.strptime(range_match.group("start"), "%H:%M").time()
             end_time = datetime.strptime(range_match.group("end"), "%H:%M").time()
-            event_started_at = datetime.combine(timestamp.date(), start_time)
+            event_started_at = datetime.combine(
+                timestamp.date(), start_time, tzinfo=tz
+            ).astimezone(UTC)
             results.append(
                 {
                     "event_type_id": event_type["event_type_id"][0],
                     "occurred_at": event_started_at,
                 }
             )
-            event_ended_at = datetime.combine(timestamp.date(), end_time)
+            event_ended_at = datetime.combine(
+                timestamp.date(), end_time, tzinfo=tz
+            ).astimezone(UTC)
             if event_ended_at < event_started_at:
                 event_ended_at += timedelta(days=1)
             results.append(
@@ -147,6 +158,7 @@ class TgMsgParser:
         keyword: str,
         line: str,
         timestamp: datetime,
+        tz: ZoneInfo,
     ) -> list[dict]:
         results = []
         metric_match = re.match(
@@ -159,7 +171,9 @@ class TgMsgParser:
             results.append(
                 {
                     "event_type_id": event_type["event_type_id"],
-                    "occurred_at": datetime.combine(timestamp.date(), time),
+                    "occurred_at": datetime.combine(
+                        timestamp.date(), time, tzinfo=tz
+                    ).astimezone(UTC),
                     "volume": int(metric_match.group("volume")),
                 }
             )
@@ -172,6 +186,7 @@ class TgMsgParser:
         keyword: str,
         line: str,
         timestamp: datetime,
+        tz: ZoneInfo,
     ) -> list[dict]:
         results = []
         described_match = re.match(
@@ -186,7 +201,9 @@ class TgMsgParser:
                 {
                     "event_type_id": event_type["event_type_id"],
                     "description": described_match.group("description").strip(""),
-                    "occurred_at": datetime.combine(timestamp.date(), time),
+                    "occurred_at": datetime.combine(
+                        timestamp.date(), time, tzinfo=tz
+                    ).astimezone(UTC),
                 }
             )
 
@@ -198,6 +215,7 @@ class TgMsgParser:
         keyword: str,
         line: str,
         timestamp: datetime,
+        tz: ZoneInfo,
     ) -> list[dict]:
         results = []
         plain_match = re.match(
@@ -210,7 +228,9 @@ class TgMsgParser:
             results.append(
                 {
                     "event_type_id": event_type["event_type_id"],
-                    "occurred_at": datetime.combine(timestamp.date(), time),
+                    "occurred_at": datetime.combine(
+                        timestamp.date(), time, tzinfo=tz
+                    ).astimezone(UTC),
                 }
             )
-        return []
+        return results

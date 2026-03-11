@@ -17,7 +17,9 @@ class Event(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     volume: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     tg_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     child_id: Mapped[int] = mapped_column(ForeignKey("childs.id"))

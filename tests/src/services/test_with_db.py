@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import select, text
@@ -62,10 +62,10 @@ async def test_with_db(session):
     event_service = EventService(session)
 
     parser = TgMsgParser(event_types)
-    timestamp = datetime(2025, 2, 2)
+    timestamp = datetime(2025, 2, 2, tzinfo=timezone.utc)
 
     range_line = "10:00-"
-    events = parser.parse_entry(range_line, timestamp, child.id, 1)
+    events = parser.parse_entry(range_line, timestamp, child.id, "Europe/London", 1)
     for event in events:
         await event_service.update_or_create(event, len(events))
         await session.commit()
@@ -75,12 +75,12 @@ async def test_with_db(session):
 
     assert len(db_events) == 1
     assert db_events[0].event_type_id == sleep_start_id
-    assert db_events[0].occurred_at == datetime(2025, 2, 2, 10, 0)
+    assert db_events[0].occurred_at == datetime(2025, 2, 2, 10, 0, tzinfo=timezone.utc)
 
     edited_range_line = "10:00-10:30 sleep"
-    events = parser.parse_entry(edited_range_line, timestamp, child.id, 1)
-    # print("events_len")
-    # print(len(events))
+    events = parser.parse_entry(
+        edited_range_line, timestamp, child.id, "Europe/London", 1
+    )
     for event in events:
         print(vars(event))
 
@@ -89,6 +89,3 @@ async def test_with_db(session):
         await session.commit()
     db_events = await event_service.get(child.id)
     assert len(db_events) == 2
-
-    # for event in db_events:
-    #     print(vars(event))
