@@ -37,8 +37,11 @@ class BaseRepository(Generic[ModelType]):
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def find(self, id: int) -> ModelType | None:
-        result = await self.db.execute(select(self.model).where(self.model.id == id))
+    async def find(self, id: int, options: list = None) -> ModelType | None:
+        query = select(self.model).where(self.model.id == id)
+        if options:
+            query = query.options(*options)
+        result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def find_first_by_column(self, column: str, value: Any) -> ModelType | None:

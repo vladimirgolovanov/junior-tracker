@@ -1,0 +1,45 @@
+from sqlalchemy import text, bindparam
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
+
+from src.models import Child
+
+
+class ChartRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_range_events(
+        self,
+        child: Child,
+        date_from: date,
+        date_to: date,
+        event_type_ids: tuple[int],
+    ):
+        query = text("""
+                 SELECT event_type_id,
+                        (occurred_at AT TIME ZONE :timezone)::timestamp AS occurred_at, description,
+                        volume
+                 FROM events
+                 WHERE (occurred_at AT TIME ZONE 'UTC' AT TIME ZONE :timezone)::date
+                      BETWEEN :date_from AND :date_to
+                      AND event_type_id IN :event_type_ids
+                      AND child_id = :child_id
+                 ORDER BY occurred_at
+                 """).bindparams(bindparam("event_type_ids", expanding=True))
+
+        results = await self.db.execute(
+            query,
+            {
+                "timezone": child.timezone,
+                "date_from": date_from,
+                "date_to": date_to,
+                "event_type_ids": event_type_ids,
+                "child_id": child.id,
+            },
+        )
+
+        return [dict(row) for row in results.mappings().all()]
+
+    async def get_plain_events(self):
+        pass

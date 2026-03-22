@@ -18,7 +18,7 @@ async def events(
     user: CurrentUser,
     service: EventService = Depends(),
 ):
-    return await service.get(child_id, user)
+    return await service.get(user, child_id)
 
 
 @router.post("/")
