@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+
+  api:
+    image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "50081:8000"
+
+  worker:
+    image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+    command: python worker.py
+    restart: always
+    env_file:
+      - .env
