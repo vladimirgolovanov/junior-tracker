@@ -137,9 +137,11 @@ SCENARIO_3 = (
     date(2026, 3, 27),
     {
         "total_sleep_duration": "13h 10m",
-        "night_sleep_duration": "3h 45m",
-        "day_sleep_duration": "9h 25m",
+        "night_sleep_duration": "10h 25m",
+        "day_sleep_duration": "2h 45m",
         "total_awake_duration": "8h 50m",
+        "day_awake_duration": "8h 40m",
+        "night_awake_duration": "10m",
         "night_sleep_end": datetime(2026, 3, 28, 6, 45),
     },
 )
