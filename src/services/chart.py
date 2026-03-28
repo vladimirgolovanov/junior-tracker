@@ -1,10 +1,8 @@
 from fastapi import Depends, HTTPException
 from datetime import date
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src import get_db
 from src.models import User, Child
 from src.repositories.chart import ChartRepository
 from src.repositories.child import ChildRepository
@@ -15,11 +13,12 @@ class Chart:
     def __init__(
         self,
         service: TimelineService = Depends(TimelineService),
-        db: AsyncSession = Depends(get_db),
+        chart_repository: ChartRepository = Depends(ChartRepository),
+        child_repository: ChildRepository = Depends(ChildRepository),
     ):
         self.service = service
-        self.chart_repository = ChartRepository(db)
-        self.child_repository = ChildRepository(db)
+        self.chart_repository = chart_repository
+        self.child_repository = child_repository
 
     async def get_chart_data(
         self,

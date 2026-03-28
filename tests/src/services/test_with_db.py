@@ -4,13 +4,17 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import select, text
 
-from src.models import Event, Child
+from src.models import Event, Child, User
 from src.services.event import EventService
 from src.services.tg_msg_parser import TgMsgParser
 
 
 @pytest.mark.asyncio
 async def test_with_db(session):
+    user = User(email="test@test.test", hashed_password="test")
+    session.add(user)
+    await session.commit()
+
     child = Child(name="test child")
     session.add(child)
     await session.commit()
@@ -71,7 +75,7 @@ async def test_with_db(session):
         await session.commit()
     await session.commit()
 
-    db_events = await event_service.get(child.id)
+    db_events = await event_service.get(user, child.id)
 
     assert len(db_events) == 1
     assert db_events[0].event_type_id == sleep_start_id
@@ -81,11 +85,9 @@ async def test_with_db(session):
     events = parser.parse_entry(
         edited_range_line, timestamp, child.id, "Europe/London", 1
     )
-    for event in events:
-        print(vars(event))
 
     for event in events:
         await event_service.update_or_create(event, len(events))
         await session.commit()
-    db_events = await event_service.get(child.id)
+    db_events = await event_service.get(user, child.id)
     assert len(db_events) == 2

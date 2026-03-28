@@ -1,12 +1,14 @@
+from fastapi import Depends
 from sqlalchemy import text, bindparam
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date, timedelta, datetime
 
+from src import get_db
 from src.models import Child
 
 
 class ChartRepository:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession = Depends(get_db)):
         self.db = db
 
     async def get_range_events(

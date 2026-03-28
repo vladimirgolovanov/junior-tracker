@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta, date
 
 from fastapi import Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src import get_db
 from src.constants.sleep import DAY_START, DAY_END
 from src.models import Child, User
 from src.repositories.chart import ChartRepository
@@ -15,16 +13,19 @@ from src.repositories.event_type import EventTypeRepository
 class Dashboard:
     def __init__(
         self,
-        db: AsyncSession = Depends(get_db),
+        child_repository: ChildRepository = Depends(ChildRepository),
+        chart_repository: ChartRepository = Depends(ChartRepository),
+        event_type_repository: EventTypeRepository = Depends(EventTypeRepository),
     ):
-        self.child_repository = ChildRepository(db)
-        self.chart_repository = ChartRepository(db)
-        self.event_type_repository = EventTypeRepository(db)
+        self.child_repository = child_repository
+        self.chart_repository = chart_repository
+        self.event_type_repository = event_type_repository
 
     async def get_last_three_days(
         self,
         child_id: int,
         user: User,
+        today: date = None,
     ):
         child = await self.child_repository.find(
             child_id, options=[selectinload(Child.users)]
@@ -48,8 +49,9 @@ class Dashboard:
         #     day_before_yesterday_rows
         # )
 
-        yesterday_date = datetime.now() - timedelta(days=7)
-        yesterday_date = yesterday_date.date()
+        if today is None:
+            today = datetime.now().date()
+        yesterday_date = today - timedelta(days=1)
         yesterday_rows_a = await self.chart_repository.get_cycle_day_events(
             child, yesterday_date, event_type_ids
         )

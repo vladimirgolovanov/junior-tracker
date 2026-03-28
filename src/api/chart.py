@@ -35,7 +35,8 @@ async def chart(  # todo: validation dates + event_type_ids
 @router.get("/dashboard")
 async def dashboard(
     child_id: Annotated[int, Query()],
+    today: Annotated[date | None, Query()] = None,
     user: User = Depends(current_active_user),
     service: Dashboard = Depends(),
 ):
-    return await service.get_last_three_days(child_id, user)
+    return await service.get_last_three_days(child_id, user, today)
