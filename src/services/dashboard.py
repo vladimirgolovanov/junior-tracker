@@ -195,7 +195,6 @@ class Dashboard:
         for row in rows:
             day_start_dt = datetime.combine(row["occurred_at"].date(), DAY_START)
 
-            print(row["occurred_at"].date(), day_date)
             # continue
             if row["occurred_at"].date() == day_date:
                 if row["event_type_id"] == 1 and row["occurred_at"] < day_start_dt:
@@ -213,7 +212,6 @@ class Dashboard:
                         {"event_type_id": 2, "occurred_at": earliest_start}
                     )
                     earliest_start = None
-                    continue
 
                 day_events.append(
                     {
