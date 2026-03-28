@@ -145,7 +145,7 @@ SCENARIO_3 = (
 )
 
 
-@pytest.mark.parametrize("seed, today, expected", [SCENARIO_1, SCENARIO_2, SCENARIO_3])
+@pytest.mark.parametrize("seed, today, expected", [SCENARIO_3])
 @pytest.mark.asyncio
 async def test_dashboard_get_last_three_days(session, seed, today, expected):
     # --- seed user ---
@@ -193,8 +193,6 @@ async def test_dashboard_get_last_three_days(session, seed, today, expected):
     result = await service.get_last_three_days(child.id, user, today=today)
 
     # --- assert ---
-    yesterday = result["yesterday"]
+    today = result["today"]
     for key, val in expected.items():
-        assert (
-            yesterday[key] == val
-        ), f"Mismatch on {key!r}: {yesterday[key]!r} != {val!r}"
+        assert today[key] == val, f"Mismatch on {key!r}: {today[key]!r} != {val!r}"

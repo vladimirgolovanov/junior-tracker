@@ -57,16 +57,21 @@ class Dashboard:
         )
         # return yesterday_rows
         # return [yesterday_rows_a, yesterday_date]
-        yesterday_rows = self.isolate_cycle_day_events(yesterday_rows_a, yesterday_date)
+        yesterday_rows = self.isolate_cycle_day_events(yesterday_rows_a, yesterday_date, event_type_ids)
 
         # today_rows = await self.chart_repository.get_cycle_day_events(
         #     child, datetime.now() - timedelta(days=2), event_type_ids
         # )
         # today_rows = self.isolate_cycle_day_events(today_rows)
+        today_date = today
+        today_rows_a = await self.chart_repository.get_cycle_day_events(
+            child, today_date, event_type_ids
+        )
+        today_rows = self.isolate_cycle_day_events(today_rows_a, today_date, event_type_ids)
 
         return {
-            # "today": self.cycle_day_sleep_data(today_rows),
-            "yesterday": self.cycle_day_sleep_data(yesterday_rows),
+            "today": self.cycle_day_sleep_data(today_rows, event_type_ids),
+            "yesterday": self.cycle_day_sleep_data(yesterday_rows, event_type_ids),
             "rows_isolated": yesterday_rows,
             # "rows_a": yesterday_rows_a,
             # "day_before_yesterday": self.cycle_day_sleep_data(
@@ -74,9 +79,10 @@ class Dashboard:
             # ),
         }
 
-    def cycle_day_sleep_data(self, rows: list[dict]):
+    def cycle_day_sleep_data(self, rows: list[dict], event_type_ids: tuple):
+        sleep_start_id, sleep_end_id = event_type_ids
         day_sleeps = []
-        if rows[0]["event_type_id"] == 2:
+        if rows[0]["event_type_id"] == sleep_end_id:
             wake_up = rows[0]["occurred_at"] if rows else None
             asleep = rows[1]["occurred_at"] if rows else None
             day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
@@ -100,7 +106,7 @@ class Dashboard:
         day_end_dt = datetime.combine(rows[0]["occurred_at"].date(), DAY_END)
         for row in rows[2:]:
             if row["occurred_at"] < day_end_dt:
-                if row["event_type_id"] == 1:
+                if row["event_type_id"] == sleep_start_id:
                     awake_time = row["occurred_at"] - wake_up
                     hours, remainder = divmod(awake_time.total_seconds(), 3600)
                     minutes = remainder // 60
@@ -114,7 +120,7 @@ class Dashboard:
                         }
                     )
                     asleep = row["occurred_at"]
-                elif row["event_type_id"] == 2:
+                elif row["event_type_id"] == sleep_end_id:
                     sleep_time = row["occurred_at"] - asleep
                     wake_up = row["occurred_at"]
                     hours, remainder = divmod(sleep_time.total_seconds(), 3600)
@@ -133,7 +139,7 @@ class Dashboard:
             else:
                 continue
 
-        sum_data = self.calc_sleep_summary(rows, (1, 2))
+        sum_data = self.calc_sleep_summary(rows, event_type_ids)
         # return day_sleeps
         return {
             "day_sleeps": day_sleeps,
@@ -188,7 +194,8 @@ class Dashboard:
             "total_awake": fmt(total_awake),
         }
 
-    def isolate_cycle_day_events(self, rows, day_date: date):
+    def isolate_cycle_day_events(self, rows, day_date: date, event_type_ids: tuple):
+        sleep_start_id, sleep_end_id = event_type_ids
         day_events = []
         earliest_start = None
         latest_event = None
@@ -197,19 +204,19 @@ class Dashboard:
 
             # continue
             if row["occurred_at"].date() == day_date:
-                if row["event_type_id"] == 1 and row["occurred_at"] < day_start_dt:
+                if row["event_type_id"] == sleep_start_id and row["occurred_at"] < day_start_dt:
                     continue
-                if row["event_type_id"] == 2 and row["occurred_at"] < day_start_dt:
+                if row["event_type_id"] == sleep_end_id and row["occurred_at"] < day_start_dt:
                     earliest_start = row["occurred_at"]
                     continue
 
                 if (
-                    row["event_type_id"] == 1
+                    row["event_type_id"] == sleep_start_id
                     and earliest_start is not None
                     and not day_events
                 ):
                     day_events.append(
-                        {"event_type_id": 2, "occurred_at": earliest_start}
+                        {"event_type_id": sleep_end_id, "occurred_at": earliest_start}
                     )
                     earliest_start = None
 
@@ -238,7 +245,7 @@ class Dashboard:
 
                 if latest_event is None:
                     continue
-                elif latest_event["event_type_id"] == 1 and row["event_type_id"] == 2:
+                elif latest_event["event_type_id"] == sleep_start_id and row["event_type_id"] == sleep_end_id:
                     day_events.append(
                         {
                             "event_type_id": row["event_type_id"],
