@@ -24,7 +24,7 @@ class BaseRepository(Generic[ModelType]):
         self,
         limit: int | None = None,
         offset: int | None = None,
-        **filters,
+        **filters: Any,
     ) -> list[ModelType]:
         query = select(self.model)
         for field, value in filters.items():
@@ -37,8 +37,8 @@ class BaseRepository(Generic[ModelType]):
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def find(self, id: int, options: list = None) -> ModelType | None:
-        query = select(self.model).where(self.model.id == id)
+    async def find(self, id: int, options: list[Any] | None = None) -> ModelType | None:
+        query = select(self.model).where(self.model.id == id)  # type: ignore[attr-defined]
         if options:
             query = query.options(*options)
         result = await self.db.execute(query)
@@ -50,7 +50,7 @@ class BaseRepository(Generic[ModelType]):
         )
         return result.scalar_one_or_none()
 
-    async def create(self, obj_in: BaseModel, **extra_fields) -> ModelType:
+    async def create(self, obj_in: BaseModel, **extra_fields: Any) -> ModelType:
         obj_data = obj_in.model_dump()
         obj_data.update(extra_fields)
         db_obj = self.model(**obj_data)

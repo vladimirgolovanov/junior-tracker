@@ -30,5 +30,5 @@ class APIKey(Base):
     child: Mapped["Child"] = relationship(back_populates="api_keys")
 
     @staticmethod
-    def generate_key():
+    def generate_key() -> str:
         return f"sk_{secrets.token_urlsafe(32)}"

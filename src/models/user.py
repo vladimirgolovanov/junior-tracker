@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from sqlalchemy import Column, DateTime, Integer, Boolean
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
 
@@ -12,13 +12,13 @@ if TYPE_CHECKING:
     from src.models import APIKey
 
 
-class User(Base, SQLAlchemyBaseUserTable):
+class User(Base, SQLAlchemyBaseUserTable[int]):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now())
-    is_verified = Column(Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     childs: Mapped[list["Child"]] = relationship(
         "Child",

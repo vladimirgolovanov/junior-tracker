@@ -41,5 +41,5 @@ def test_isolate_cycle_day_events(rows, day_date, expected):
     service = Dashboard(
         child_repository=None, chart_repository=None, event_type_repository=None
     )
-    result = service.isolate_cycle_day_events(rows, day_date)
+    result = service.isolate_cycle_day_events(rows, day_date, (1, 2))
     assert result == expected

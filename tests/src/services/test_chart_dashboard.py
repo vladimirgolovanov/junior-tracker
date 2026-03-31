@@ -77,7 +77,7 @@ class TestChartDashboard:
         ]
         service = Dashboard()
         day_date = datetime(2026, 3, 16).date()
-        pairs = service.isolate_cycle_day_events(rows, day_date)
+        pairs = service.isolate_cycle_day_events(rows, day_date, (1, 2))
         # echo pairs
         print("\n")
         # print(*pairs, sep="\n")
