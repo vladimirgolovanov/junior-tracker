@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -39,4 +39,5 @@ async def dashboard(
     user: User = Depends(current_active_user),
     service: Dashboard = Depends(),
 ):
-    return await service.get_last_three_days(child_id, user, today)
+    current_time = datetime.now(tz=timezone.utc)  # todo: if today?
+    return await service.get_last_three_days(child_id, user, today, current_time)

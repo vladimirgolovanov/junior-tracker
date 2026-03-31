@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, date
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import selectinload
@@ -26,10 +27,14 @@ class Dashboard:
         child_id: int,
         user: User,
         today: date = None,
+        current_time: datetime = None,
     ):
         child = await self.child_repository.find(
             child_id, options=[selectinload(Child.users)]
         )
+
+        child_tz = ZoneInfo(child.timezone)
+        current_time = current_time.astimezone(child_tz).replace(tzinfo=None)
 
         if child is None:
             raise HTTPException(status_code=404, detail="Child not found")
@@ -77,19 +82,41 @@ class Dashboard:
         )
 
         return {
-            "today": self.cycle_day_sleep_data(today_rows, event_type_ids),
+            "today": self.cycle_day_sleep_data(
+                today_rows,
+                event_type_ids,
+                True,
+                current_time,
+            ),
             "yesterday": self.cycle_day_sleep_data(yesterday_rows, event_type_ids),
             "day_before_yesterday": self.cycle_day_sleep_data(
                 day_before_yesterday_rows, event_type_ids
             ),
         }
 
-    def cycle_day_sleep_data(self, rows: list[dict], event_type_ids: tuple):
+    def cycle_day_sleep_data(
+        self,
+        rows: list[dict],
+        event_type_ids: tuple,
+        is_today: bool = False,
+        current_time: datetime = None,
+    ):
         sleep_start_id, sleep_end_id = event_type_ids
+        current_awake = 0
+        current_sleep = 0
         if len(rows) < 2:
+            if is_today and rows:
+                if rows[-1]["event_type_id"] == sleep_start_id:
+                    delta = current_time - rows[-1]["occurred_at"]
+                    current_sleep = delta.total_seconds()
+                if rows[-1]["event_type_id"] == sleep_end_id:
+                    delta = current_time - rows[-1]["occurred_at"]
+                    current_awake = delta.total_seconds()
             return {
                 "day_sleeps": [],
                 "night_sleeps": [],
+                "current_sleep": self.fmt(current_sleep),
+                "current_awake": self.fmt(current_awake),
                 "total_sleep_duration": "0m",
                 "night_sleep_duration": "0m",
                 "day_sleep_duration": "0m",
@@ -157,10 +184,20 @@ class Dashboard:
                 )
 
         sum_data = self.calc_sleep_summary(rows, event_type_ids)
-        # return day_sleeps
+
+        if is_today:
+            if rows[-1]["event_type_id"] == sleep_start_id:
+                delta = current_time - rows[-1]["occurred_at"]
+                current_sleep = delta.total_seconds()
+            if rows[-1]["event_type_id"] == sleep_end_id:
+                delta = current_time - rows[-1]["occurred_at"]
+                current_awake = delta.total_seconds()
+
         return {
             "day_sleeps": day_sleeps,
             "night_sleeps": night_sleeps,
+            "current_sleep": self.fmt(current_sleep),
+            "current_awake": self.fmt(current_awake),
             "total_sleep_duration": sum_data["total_sleep"],
             "night_sleep_duration": sum_data["night_sleep"],
             "day_sleep_duration": sum_data["day_sleep"],
@@ -168,7 +205,6 @@ class Dashboard:
             "day_awake_duration": sum_data["day_awake"],
             "night_awake_duration": sum_data["night_awake"],
             "night_sleep_end": rows[-1]["occurred_at"] if rows else None,
-            # "rows": rows,
         }
 
     def calc_sleep_summary(self, rows: list, event_types: tuple) -> dict:
@@ -205,19 +241,20 @@ class Dashboard:
                 asleep_at = None
                 awake_at = row["occurred_at"]
 
-        def fmt(seconds):
-            hours, rem = divmod(seconds, 3600)
-            minutes = rem // 60
-            return f"{int(hours)}h {int(minutes)}m" if hours else f"{int(minutes)}m"
-
         return {
-            "total_sleep": fmt(total_sleep),
-            "night_sleep": fmt(night_sleep),
-            "day_sleep": fmt(day_sleep),
-            "total_awake": fmt(day_awake + night_awake),
-            "day_awake": fmt(day_awake),
-            "night_awake": fmt(night_awake),
+            "total_sleep": self.fmt(total_sleep),
+            "night_sleep": self.fmt(night_sleep),
+            "day_sleep": self.fmt(day_sleep),
+            "total_awake": self.fmt(day_awake + night_awake),
+            "day_awake": self.fmt(day_awake),
+            "night_awake": self.fmt(night_awake),
         }
+
+    @staticmethod
+    def fmt(seconds):
+        hours, rem = divmod(seconds, 3600)
+        minutes = rem // 60
+        return f"{int(hours)}h {int(minutes)}m" if hours else f"{int(minutes)}m"
 
     def isolate_cycle_day_events(self, rows, day_date: date, event_type_ids: tuple):
         sleep_start_id, sleep_end_id = event_type_ids
