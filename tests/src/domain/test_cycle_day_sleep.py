@@ -1,8 +1,7 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 
-from src.services.daily import TimelineService
-from src.services.dashboard import Dashboard
+from src.domain.services.cycle_day_events_isolator import CycleDayEventsIsolator
 
 rows_a = [
     {"event_type_id": 1, "occurred_at": "2026-03-14 00:05:00.000000"},
@@ -69,26 +68,15 @@ rows_c = [
 ]
 
 
-class TestChartDashboard:
+class TestCycleDaySleep:
     def test_isolate_cycle_day_events(self):
         rows = [
             {**row, "occurred_at": datetime.fromisoformat(row["occurred_at"])}
             for row in rows_c
         ]
-        service = Dashboard()
         day_date = datetime(2026, 3, 16).date()
-        pairs = service.isolate_cycle_day_events(rows, day_date, (1, 2))
-        # echo pairs
+        pairs = CycleDayEventsIsolator().isolate(rows, day_date, (1, 2))
         print("\n")
-        # print(*pairs, sep="\n")
-        # print(pairs[0]["occurred_at"])
         assert pairs[0]["occurred_at"] == datetime.fromisoformat(
             "2026-03-16 07:10:00.000000"
         )
-
-    # def test_cycle_day_sleep_data(self):
-    #     service = Dashboard()
-    #     day_date = datetime(2026, 3, 14).date()
-    #     day_rows = service.isolate_cycle_day_events(rows, day_date)
-    #     pairs = service.cycle_day_sleep_data(day_rows)
-    #     print(pairs)

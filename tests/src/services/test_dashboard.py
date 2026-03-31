@@ -192,7 +192,9 @@ async def test_dashboard_get_last_three_days(session, seed, today, expected):
     )
 
     # --- call service ---
-    result = await service.get_last_three_days(child.id, user, today=today)
+    result = await service.get_last_three_days(
+        child.id, user, today=today, current_time=datetime(2026, 3, 28, 9, 0, tzinfo=timezone.utc)
+    )
 
     # --- assert ---
     today = result["today"]

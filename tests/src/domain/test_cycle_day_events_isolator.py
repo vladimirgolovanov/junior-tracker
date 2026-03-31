@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, date
 
-from src.services.dashboard import Dashboard
+from src.domain.services.cycle_day_events_isolator import CycleDayEventsIsolator
 
 SCENARIO_1 = (
     [
@@ -37,9 +37,6 @@ SCENARIO_2 = (
 
 
 @pytest.mark.parametrize("rows, day_date, expected", [SCENARIO_1, SCENARIO_2])
-def test_isolate_cycle_day_events(rows, day_date, expected):
-    service = Dashboard(
-        child_repository=None, chart_repository=None, event_type_repository=None
-    )
-    result = service.isolate_cycle_day_events(rows, day_date, (1, 2))
+def test_cycle_day_events_isolator(rows, day_date, expected):
+    result = CycleDayEventsIsolator().isolate(rows, day_date, (1, 2))
     assert result == expected

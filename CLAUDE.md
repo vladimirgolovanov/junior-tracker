@@ -83,3 +83,17 @@ Tests use `tests/.env.test` with a separate test database (port 54321).
 ## Testing
 
 Tests use `pytest-asyncio`. `tests/conftest.py` sets up a session-scoped schema and per-test connection with rollback — no test data persists between tests. The test DB must exist before running tests. No mocking of the database; tests hit real PostgreSQL.
+
+## Python environment
+
+This project uses a virtual environment located at `.venv/`.
+Always activate it before running any Python, Poetry, or pytest commands:
+
+source .venv/bin/activate && <command>
+
+Or run executables directly via:
+- `.venv/bin/python`
+- `.venv/bin/poetry`
+- `.venv/bin/pytest`
+
+Never use bare `python`, `poetry`, or `pytest` without activating the venv first.
