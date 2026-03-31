@@ -44,4 +44,4 @@ class Chart:
             child, date_from, date_to, event_type_ids
         )
 
-        return self.service.get_range_events(rows)
+        return self.service.get_range_events(rows, event_type_ids)
