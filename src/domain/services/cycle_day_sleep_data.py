@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.constants.sleep import DAY_END
+from src.constants.sleep import DAY_START, DAY_END
 from src.domain.utils import fmt
 from src.domain.services.sleep_summary_calculator import SleepSummaryCalculator
 
@@ -101,20 +101,30 @@ class CycleDaySleepData:
             if rows[-1]["event_type_id"] == sleep_start_id:
                 delta = current_time - rows[-1]["occurred_at"]
                 current_sleep = delta.total_seconds()
+                sum_data["total_sleep"] += current_sleep
+                if DAY_START <= rows[-1]["occurred_at"].time() < DAY_END:
+                    sum_data["day_sleep"] += current_sleep
+                else:
+                    sum_data["night_sleep"] += current_sleep
             if rows[-1]["event_type_id"] == sleep_end_id:
                 delta = current_time - rows[-1]["occurred_at"]
                 current_awake = delta.total_seconds()
+                sum_data["total_awake"] += current_awake
+                if rows[-1]["occurred_at"].time() < DAY_END:
+                    sum_data["day_awake"] += current_awake
+                else:
+                    sum_data["night_awake"] += current_awake
 
         return {
             "day_sleeps": day_sleeps,
             "night_sleeps": night_sleeps,
             "current_sleep": fmt(current_sleep),
             "current_awake": fmt(current_awake),
-            "total_sleep_duration": sum_data["total_sleep"],
-            "night_sleep_duration": sum_data["night_sleep"],
-            "day_sleep_duration": sum_data["day_sleep"],
-            "total_awake_duration": sum_data["total_awake"],
-            "day_awake_duration": sum_data["day_awake"],
-            "night_awake_duration": sum_data["night_awake"],
+            "total_sleep_duration": fmt(sum_data["total_sleep"]),
+            "night_sleep_duration": fmt(sum_data["night_sleep"]),
+            "day_sleep_duration": fmt(sum_data["day_sleep"]),
+            "total_awake_duration": fmt(sum_data["total_awake"]),
+            "day_awake_duration": fmt(sum_data["day_awake"]),
+            "night_awake_duration": fmt(sum_data["night_awake"]),
             "night_sleep_end": rows[-1]["occurred_at"] if rows else None,
         }

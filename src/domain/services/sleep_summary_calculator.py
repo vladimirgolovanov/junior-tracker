@@ -1,5 +1,4 @@
 from src.constants.sleep import DAY_START, DAY_END
-from src.domain.utils import fmt
 
 
 class SleepSummaryCalculator:
@@ -40,10 +39,10 @@ class SleepSummaryCalculator:
                 asleep_at = None
 
         return {
-            "total_sleep": fmt(total_sleep),
-            "night_sleep": fmt(night_sleep),
-            "day_sleep": fmt(day_sleep),
-            "total_awake": fmt(day_awake + night_awake),
-            "day_awake": fmt(day_awake),
-            "night_awake": fmt(night_awake),
+            "total_sleep": total_sleep,
+            "night_sleep": night_sleep,
+            "day_sleep": day_sleep,
+            "total_awake": day_awake + night_awake,
+            "day_awake": day_awake,
+            "night_awake": night_awake,
         }

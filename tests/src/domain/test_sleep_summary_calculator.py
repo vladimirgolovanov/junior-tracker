@@ -13,12 +13,12 @@ SCENARIO_1 = (
         {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 1, 16, 11, 0)},
     ],
     {
-        "total_sleep": "1h 0m",
-        "day_sleep": "1h 0m",
-        "night_sleep": "0m",
-        "total_awake": "0m",
-        "day_awake": "0m",
-        "night_awake": "0m",
+        "total_sleep": 3600,
+        "day_sleep": 3600,
+        "night_sleep": 0,
+        "total_awake": 0,
+        "day_awake": 0,
+        "night_awake": 0,
     },
 )
 
@@ -28,12 +28,12 @@ SCENARIO_2 = (
         {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 1, 17, 6, 30)},
     ],
     {
-        "total_sleep": "10h 0m",
-        "night_sleep": "10h 0m",
-        "day_sleep": "0m",
-        "total_awake": "0m",
-        "day_awake": "0m",
-        "night_awake": "0m",
+        "total_sleep": 36000,
+        "night_sleep": 36000,
+        "day_sleep": 0,
+        "total_awake": 0,
+        "day_awake": 0,
+        "night_awake": 0,
     },
 )
 
@@ -52,12 +52,12 @@ SCENARIO_3 = (
         {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 28, 6, 45)},
     ],
     {
-        "total_sleep": "13h 10m",
-        "day_sleep": "2h 45m",
-        "night_sleep": "10h 25m",
-        "total_awake": "11h 15m",
-        "day_awake": "11h 5m",
-        "night_awake": "10m",
+        "total_sleep": 47400,   # 13h 10m
+        "day_sleep": 9900,      # 2h 45m
+        "night_sleep": 37500,   # 10h 25m
+        "total_awake": 40500,   # 11h 15m
+        "day_awake": 39900,     # 11h 5m
+        "night_awake": 600,     # 10m
     },
 )
 
