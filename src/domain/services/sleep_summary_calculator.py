@@ -25,7 +25,10 @@ class SleepSummaryCalculator:
                         night_awake += awake_seconds
                 asleep_at = row["occurred_at"]
 
-            elif row["event_type_id"] == wake_id and asleep_at is not None:
+            elif row["event_type_id"] == wake_id:
+                awake_at = row["occurred_at"]
+                if asleep_at is None:
+                    continue
                 duration = (row["occurred_at"] - asleep_at).total_seconds()
                 total_sleep += duration
 
@@ -35,7 +38,6 @@ class SleepSummaryCalculator:
                     night_sleep += duration
 
                 asleep_at = None
-                awake_at = row["occurred_at"]
 
         return {
             "total_sleep": fmt(total_sleep),
