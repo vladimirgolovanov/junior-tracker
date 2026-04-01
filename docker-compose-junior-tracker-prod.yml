@@ -9,6 +9,8 @@ services:
       - .env
     ports:
       - "50081:50081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   worker:
     image: ghcr.io/vladimirgolovanov/junior-tracker:latest
@@ -16,10 +18,5 @@ services:
     restart: always
     env_file:
       - .env
-
-networks:
-  default:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.17.0.0/16
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
