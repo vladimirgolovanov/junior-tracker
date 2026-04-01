@@ -7,10 +7,7 @@ services:
     restart: always
     env_file:
       - .env
-    ports:
-      - "50081:50081"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
 
   worker:
     image: ghcr.io/vladimirgolovanov/junior-tracker:latest
@@ -18,5 +15,4 @@ services:
     restart: always
     env_file:
       - .env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
