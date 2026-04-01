@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     ports:
-      - "50081:8000"
+      - "50081:50081"
 
   worker:
     image: ghcr.io/vladimirgolovanov/junior-tracker:latest
