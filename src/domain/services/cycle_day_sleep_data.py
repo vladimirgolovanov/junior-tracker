@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from src.constants.sleep import DAY_START, DAY_END
-from src.domain.utils import fmt
 from src.domain.services.sleep_summary_calculator import SleepSummaryCalculator
 
 
@@ -27,14 +26,14 @@ class CycleDaySleepData:
             return {
                 "day_sleeps": [],
                 "night_sleeps": [],
-                "current_sleep": fmt(current_sleep),
-                "current_awake": fmt(current_awake),
-                "total_sleep_duration": "0m",
-                "night_sleep_duration": "0m",
-                "day_sleep_duration": "0m",
-                "total_awake_duration": "0m",
-                "day_awake_duration": "0m",
-                "night_awake_duration": "0m",
+                "current_sleep": int(current_sleep // 60),
+                "current_awake": int(current_awake // 60),
+                "total_sleep_duration": 0,
+                "night_sleep_duration": 0,
+                "day_sleep_duration": 0,
+                "total_awake_duration": 0,
+                "day_awake_duration": 0,
+                "night_awake_duration": 0,
                 "night_sleep_end": None,
             }
         day_sleeps = []
@@ -43,17 +42,7 @@ class CycleDaySleepData:
             asleep = rows[1]["occurred_at"]
             day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
             awake_time = asleep - wake_up
-            hours, remainder = divmod(awake_time.total_seconds(), 3600)
-            minutes = remainder // 60
-            day_sleeps.append(
-                {
-                    "awake_time": (
-                        f"{int(hours)}h {int(minutes)}m"
-                        if hours
-                        else f"{int(minutes)}m"
-                    ),
-                }
-            )
+            day_sleeps.append({"awake_time": int(awake_time.total_seconds() // 60)})
         else:
             wake_up = rows[1]["occurred_at"]
             asleep = rows[0]["occurred_at"]
@@ -64,15 +53,7 @@ class CycleDaySleepData:
         for row in rows[2:]:
             if row["event_type_id"] == sleep_start_id:
                 awake_time = row["occurred_at"] - wake_up
-                hours, remainder = divmod(awake_time.total_seconds(), 3600)
-                minutes = remainder // 60
-                awake_entry = {
-                    "awake_time": (
-                        f"{int(hours)}h {int(minutes)}m"
-                        if hours
-                        else f"{int(minutes)}m"
-                    ),
-                }
+                awake_entry = {"awake_time": int(awake_time.total_seconds() // 60)}
                 (day_sleeps if wake_up < day_end_dt else night_sleeps).append(
                     awake_entry
                 )
@@ -80,14 +61,8 @@ class CycleDaySleepData:
             elif row["event_type_id"] == sleep_end_id:
                 sleep_time = row["occurred_at"] - asleep
                 wake_up = row["occurred_at"]
-                hours, remainder = divmod(sleep_time.total_seconds(), 3600)
-                minutes = remainder // 60
                 sleep_entry = {
-                    "sleep_time": (
-                        f"{int(hours)}h {int(minutes)}m"
-                        if hours
-                        else f"{int(minutes)}m"
-                    ),
+                    "sleep_time": int(sleep_time.total_seconds() // 60),
                     "sleep_start": f"{asleep.strftime('%H:%M')}",
                     "wake_up": f"{wake_up.strftime('%H:%M')}",
                 }
@@ -118,13 +93,13 @@ class CycleDaySleepData:
         return {
             "day_sleeps": day_sleeps,
             "night_sleeps": night_sleeps,
-            "current_sleep": fmt(current_sleep),
-            "current_awake": fmt(current_awake),
-            "total_sleep_duration": fmt(sum_data["total_sleep"]),
-            "night_sleep_duration": fmt(sum_data["night_sleep"]),
-            "day_sleep_duration": fmt(sum_data["day_sleep"]),
-            "total_awake_duration": fmt(sum_data["total_awake"]),
-            "day_awake_duration": fmt(sum_data["day_awake"]),
-            "night_awake_duration": fmt(sum_data["night_awake"]),
+            "current_sleep": int(current_sleep // 60),
+            "current_awake": int(current_awake // 60),
+            "total_sleep_duration": int(sum_data["total_sleep"] // 60),
+            "night_sleep_duration": int(sum_data["night_sleep"] // 60),
+            "day_sleep_duration": int(sum_data["day_sleep"] // 60),
+            "total_awake_duration": int(sum_data["total_awake"] // 60),
+            "day_awake_duration": int(sum_data["day_awake"] // 60),
+            "night_awake_duration": int(sum_data["night_awake"] // 60),
             "night_sleep_end": rows[-1]["occurred_at"] if rows else None,
         }
