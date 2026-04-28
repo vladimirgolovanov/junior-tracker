@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: junior-tracker-api
+  namespace: junior-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: junior-tracker-api
+  template:
+    metadata:
+      labels:
+        app: junior-tracker-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: api
+          image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+          envFrom:
+            - secretRef:
+                name: junior-tracker-env
+          ports:
+            - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: junior-tracker-api
+  namespace: junior-tracker
+spec:
+  selector:
+    app: junior-tracker-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: junior-tracker-worker
+  namespace: junior-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: junior-tracker-worker
+  template:
+    metadata:
+      labels:
+        app: junior-tracker-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: worker
+          image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+          command: ["python", "worker.py"]
+          envFrom:
+            - secretRef:
+                name: junior-tracker-env
