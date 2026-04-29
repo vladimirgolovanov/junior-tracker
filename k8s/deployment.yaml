@@ -27,14 +27,14 @@ spec:
             httpGet:
               path: /health
               port: 50081
-            initialDelaySeconds: 15
+            initialDelaySeconds: 40
             periodSeconds: 20
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: 50081
-            initialDelaySeconds: 5
+            initialDelaySeconds: 35
             periodSeconds: 10
             failureThreshold: 3
 ---
