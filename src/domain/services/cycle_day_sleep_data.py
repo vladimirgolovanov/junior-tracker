@@ -104,6 +104,6 @@ class CycleDaySleepData:
             "day_awake_duration": int(sum_data["day_awake"] // 60),
             "night_awake_duration": int(sum_data["night_awake"] // 60),
             "night_sleep_end": rows[-1]["occurred_at"] if rows else None,
-            "awake_time": awake_time,
+            "awake_time": rows[0]["occurred_at"] if rows else None,
             "cycle_length": int(sum_data["cycle_length"] // 60),
         }
