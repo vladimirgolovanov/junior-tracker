@@ -74,3 +74,9 @@ spec:
           envFrom:
             - secretRef:
                 name: junior-tracker-env
+          livenessProbe:
+            exec:
+              command: ["pgrep", "-f", "worker.py"]
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            failureThreshold: 3
