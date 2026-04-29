@@ -136,12 +136,12 @@ SCENARIO_3 = (
     },
     date(2026, 3, 27),
     {
-        "total_sleep_duration": "13h 10m",
-        "night_sleep_duration": "10h 25m",
-        "day_sleep_duration": "2h 45m",
-        "total_awake_duration": "13h 30m",
-        "day_awake_duration": "13h 20m",
-        "night_awake_duration": "10m",
+        "total_sleep_duration": 790,
+        "night_sleep_duration": 625,
+        "day_sleep_duration": 165,
+        "total_awake_duration": 810,
+        "day_awake_duration": 800,
+        "night_awake_duration": 10,
         "night_sleep_end": datetime(2026, 3, 28, 6, 45),
     },
 )

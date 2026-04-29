@@ -22,7 +22,7 @@ def test_current_awake_when_child_is_awake():
         rows, EVENT_TYPES, is_today=True, current_time=current_time
     )
 
-    assert result["total_awake_duration"] == "7h 35m"
-    assert result["day_awake_duration"] == "7h 35m"
-    assert result["current_awake"] == "3h 35m"
-    assert result["current_sleep"] == "0m"
+    assert result["total_awake_duration"] == 455
+    assert result["day_awake_duration"] == 455
+    assert result["current_awake"] == 215
+    assert result["current_sleep"] == 0
