@@ -5,7 +5,6 @@ class SleepSummaryCalculator:
     def calculate(self, rows: list, event_types: tuple) -> dict:
         sleep_id, wake_id = event_types
 
-        total_sleep = 0
         night_sleep = 0
         day_sleep = 0
         day_awake = 0
@@ -15,7 +14,20 @@ class SleepSummaryCalculator:
         awake_at = None
 
         for row in rows:
-            if row["event_type_id"] == sleep_id:
+            if row["event_type_id"] == wake_id:
+                awake_at = row["occurred_at"]
+                if asleep_at is None:
+                    continue
+                duration = (row["occurred_at"] - asleep_at).total_seconds()
+
+                if DAY_START <= asleep_at.time() and awake_at.time() < DAY_END:
+                    day_sleep += duration
+                else:
+                    night_sleep += duration
+
+                asleep_at = None
+
+            elif row["event_type_id"] == sleep_id:
                 if awake_at is not None:
                     awake_seconds = (row["occurred_at"] - awake_at).total_seconds()
                     if awake_at.time() < DAY_END:
@@ -24,25 +36,12 @@ class SleepSummaryCalculator:
                         night_awake += awake_seconds
                 asleep_at = row["occurred_at"]
 
-            elif row["event_type_id"] == wake_id:
-                awake_at = row["occurred_at"]
-                if asleep_at is None:
-                    continue
-                duration = (row["occurred_at"] - asleep_at).total_seconds()
-                total_sleep += duration
-
-                if DAY_START <= asleep_at.time() < DAY_END:
-                    day_sleep += duration
-                else:
-                    night_sleep += duration
-
-                asleep_at = None
-
         return {
-            "total_sleep": total_sleep,
+            "total_sleep": night_sleep + day_sleep,
             "night_sleep": night_sleep,
             "day_sleep": day_sleep,
             "total_awake": day_awake + night_awake,
             "day_awake": day_awake,
             "night_awake": night_awake,
+            "cycle_length": night_sleep + day_sleep + day_awake + night_awake,
         }

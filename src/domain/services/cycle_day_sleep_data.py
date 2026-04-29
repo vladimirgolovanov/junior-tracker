@@ -40,23 +40,24 @@ class CycleDaySleepData:
         if rows[0]["event_type_id"] == sleep_end_id:
             wake_up = rows[0]["occurred_at"]
             asleep = rows[1]["occurred_at"]
-            day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
-            awake_time = asleep - wake_up
-            day_sleeps.append({"awake_time": int(awake_time.total_seconds() // 60)})
+            # day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
+            # day_sleeps.append({"awake_time": int(awake_time.total_seconds() // 60)})
         else:
             wake_up = rows[1]["occurred_at"]
             asleep = rows[0]["occurred_at"]
-            day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
+            awake_time = rows[0]["occurred_at"]
+            # day_sleeps.append({"wake_up": f"{wake_up.strftime('%H:%M')}"})
 
         day_end_dt = datetime.combine(rows[0]["occurred_at"].date(), DAY_END)
         night_sleeps = []
+        awake_time = None
         for row in rows[2:]:
             if row["event_type_id"] == sleep_start_id:
                 awake_time = row["occurred_at"] - wake_up
                 awake_entry = {"awake_time": int(awake_time.total_seconds() // 60)}
-                (day_sleeps if wake_up < day_end_dt else night_sleeps).append(
-                    awake_entry
-                )
+                # (day_sleeps if wake_up < day_end_dt else night_sleeps).append(
+                #     awake_entry
+                # )
                 asleep = row["occurred_at"]
             elif row["event_type_id"] == sleep_end_id:
                 sleep_time = row["occurred_at"] - asleep
@@ -65,8 +66,9 @@ class CycleDaySleepData:
                     "sleep_time": int(sleep_time.total_seconds() // 60),
                     "sleep_start": f"{asleep.strftime('%H:%M')}",
                     "wake_up": f"{wake_up.strftime('%H:%M')}",
+                    "is_day_sleep": wake_up < day_end_dt,
                 }
-                (day_sleeps if asleep < day_end_dt else night_sleeps).append(
+                (day_sleeps if wake_up < day_end_dt else night_sleeps).append(
                     sleep_entry
                 )
 
@@ -96,10 +98,12 @@ class CycleDaySleepData:
             "current_sleep": int(current_sleep // 60),
             "current_awake": int(current_awake // 60),
             "total_sleep_duration": int(sum_data["total_sleep"] // 60),
-            "night_sleep_duration": int(sum_data["night_sleep"] // 60),
-            "day_sleep_duration": int(sum_data["day_sleep"] // 60),
+            "night_sleep_duration": sum(s["sleep_time"] for s in night_sleeps),
+            "day_sleep_duration": sum(s["sleep_time"] for s in day_sleeps),
             "total_awake_duration": int(sum_data["total_awake"] // 60),
             "day_awake_duration": int(sum_data["day_awake"] // 60),
             "night_awake_duration": int(sum_data["night_awake"] // 60),
             "night_sleep_end": rows[-1]["occurred_at"] if rows else None,
+            "awake_time": awake_time,
+            "cycle_length": int(sum_data["cycle_length"] // 60),
         }
