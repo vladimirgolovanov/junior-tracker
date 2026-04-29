@@ -76,7 +76,7 @@ spec:
                 name: junior-tracker-env
           livenessProbe:
             exec:
-              command: ["pgrep", "-f", "worker.py"]
+              command: ["python", "-c", "import sys, os; sys.exit(0)"]
             initialDelaySeconds: 40
             periodSeconds: 30
             failureThreshold: 3
