@@ -11,6 +11,14 @@ from src.models.base import Base
 ModelType = TypeVar("ModelType", bound=Base)
 
 
+_OPERATORS = {
+    "gte": lambda col, v: col >= v,
+    "lte": lambda col, v: col <= v,
+    "gt":  lambda col, v: col > v,
+    "lt":  lambda col, v: col < v,
+}
+
+
 class BaseRepository(Generic[ModelType]):
     def __init__(
         self,
@@ -27,9 +35,15 @@ class BaseRepository(Generic[ModelType]):
         **filters: Any,
     ) -> list[ModelType]:
         query = select(self.model)
-        for field, value in filters.items():
-            if value is not None and hasattr(self.model, field):
-                query = query.where(getattr(self.model, field) == value)
+        for key, value in filters.items():
+            if value is None:
+                continue
+            if "__" in key:
+                field, op = key.rsplit("__", 1)
+                if hasattr(self.model, field) and op in _OPERATORS:
+                    query = query.where(_OPERATORS[op](getattr(self.model, field), value))
+            elif hasattr(self.model, key):
+                query = query.where(getattr(self.model, key) == value)
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:

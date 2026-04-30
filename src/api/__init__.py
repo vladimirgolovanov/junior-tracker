@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from src.auth.users import current_active_user
 from src.api.event import router as event_router
+from src.api.event_type import router as event_type_router
 from src.api.keys import router as keys_router
 from src.api.device import router as device_router
 from src.api.chart import router as chart_router
@@ -42,5 +43,12 @@ router.include_router(
     router=chart_router,
     prefix="/chart",
     tags=["chart"],
+    dependencies=[Depends(current_active_user)],
+)
+
+router.include_router(
+    router=event_type_router,
+    prefix="/event_types",
+    tags=["event_types"],
     dependencies=[Depends(current_active_user)],
 )

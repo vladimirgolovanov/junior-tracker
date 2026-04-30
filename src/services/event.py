@@ -29,10 +29,9 @@ class EventService:
     ):
         return await self.repository.update_or_create(event, events_count=events_count)
 
-    async def get(self, user: User, child_id: int):
+    async def get(self, user: User, child_id: int, **kwargs):
         # todo: check if child belongs to user
-        filters = {"child_id": child_id}
-        return await self.repository.get(**filters)
+        return await self.repository.get(child_id=child_id, **kwargs)
 
     async def get_event_types(self, child_id: int):
         query = text("""SELECT id,
