@@ -6,6 +6,7 @@ from src.models.child import child_users
 from src.models.event_type import EventType
 from src.repositories.chart import ChartRepository
 from src.repositories.child import ChildRepository
+from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.services.dashboard import Dashboard
 
@@ -189,11 +190,15 @@ async def test_dashboard_get_last_three_days(session, seed, today, expected):
         child_repository=ChildRepository(db=session),
         chart_repository=ChartRepository(db=session),
         event_type_repository=EventTypeRepository(db=session),
+        event_repository=EventRepository(db=session),
     )
 
     # --- call service ---
     result = await service.get_last_three_days(
-        child.id, user, today=today, current_time=datetime(2026, 3, 28, 9, 0, tzinfo=timezone.utc)
+        child.id,
+        user,
+        today=today,
+        current_time=datetime(2026, 3, 28, 9, 0, tzinfo=timezone.utc),
     )
 
     # --- assert ---

@@ -9,6 +9,7 @@ from src.domain.services.cycle_day_sleep_data import CycleDaySleepData
 from src.models import Child, User
 from src.repositories.chart import ChartRepository
 from src.repositories.child import ChildRepository
+from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 
 
@@ -18,10 +19,12 @@ class Dashboard:
         child_repository: ChildRepository = Depends(ChildRepository),
         chart_repository: ChartRepository = Depends(ChartRepository),
         event_type_repository: EventTypeRepository = Depends(EventTypeRepository),
+        event_repository: EventRepository = Depends(EventRepository),
     ):
         self.child_repository = child_repository
         self.chart_repository = chart_repository
         self.event_type_repository = event_type_repository
+        self.event_repository = event_repository
 
     async def get_last_three_days(
         self,
@@ -35,10 +38,9 @@ class Dashboard:
         )
 
         child_tz = ZoneInfo(child.timezone)
-        current_time = current_time.astimezone(child_tz).replace(tzinfo=None)
-
         if child is None:
             raise HTTPException(status_code=404, detail="Child not found")
+        current_time = current_time.astimezone(child_tz).replace(tzinfo=None)
 
         if not any(u.id == user.id for u in child.users):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -49,6 +51,15 @@ class Dashboard:
 
         if today is None:
             today = datetime.now().date()
+
+        filters = {
+            "child_id": child.id,
+            "event_type_id": event_type_ids[1],
+            "occurred_at__gt": today,
+        }
+        today_wakeup_events = await self.event_repository.get(**filters)
+        if not today_wakeup_events:
+            today = today - timedelta(days=1)
 
         isolator = CycleDayEventsIsolator()
         builder = CycleDaySleepData()
@@ -65,7 +76,9 @@ class Dashboard:
         yesterday_rows = await self.chart_repository.get_cycle_day_events(
             child, yesterday_date, event_type_ids
         )
-        yesterday_rows = isolator.isolate(yesterday_rows, yesterday_date, event_type_ids)
+        yesterday_rows = isolator.isolate(
+            yesterday_rows, yesterday_date, event_type_ids
+        )
 
         today_date = today
         today_rows_a = await self.chart_repository.get_cycle_day_events(

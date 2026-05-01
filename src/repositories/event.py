@@ -1,13 +1,15 @@
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src import get_db
 from src.models import Event
 from src.repositories.base import BaseRepository, ModelType
 
 
 class EventRepository(BaseRepository[Event]):
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession = Depends(get_db)):
         super().__init__(model=Event, db=db)
 
     async def update_or_create(
