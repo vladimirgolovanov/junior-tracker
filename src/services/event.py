@@ -1,9 +1,11 @@
+from typing import Optional
+
 from fastapi import Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db_helper import get_db
-from src.models import User
+from src.models import User, Event
 from src.repositories.event import EventRepository
 from src.schemas.event import EventCreateInternal
 
@@ -21,6 +23,9 @@ class EventService:
         event: EventCreateInternal,
     ):
         return await self.repository.create(event)
+
+    async def set_tg_msg_id(self, record_id: int, tg_msg_id: int) -> Optional[Event]:
+        return await self.repository.update(record_id, tg_message_id=tg_msg_id)
 
     async def update_or_create(
         self,

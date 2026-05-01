@@ -28,9 +28,11 @@ class RabbitWorker:
         self,
         rabbit_url: str,
         queue_name: str,
+        handler,
     ):
         self.rabbit_url = rabbit_url
         self.queue_name = queue_name
+        self._handler = handler
         self._connection = None
         self._channel = None
         self._queue = None
@@ -54,8 +56,7 @@ class RabbitWorker:
         async with message.process(requeue=False):
             body = json.loads(message.body.decode())
             logger.info("Received message: %s", body)
-            await parse_msg(body)
-            # await some_service.handle(body)
+            await self._handler(body)
 
     async def start(self):
         await self.connect()
@@ -99,23 +100,35 @@ async def parse_msg(
             await event_service.update_or_create(event, len(events))
 
 
+async def handle_tg_commands_responses(body: dict):
+    logger.info("Received tg commands response: %s", body)
+    async for db in get_db():
+        event_service = EventService(db)
+        await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
+
+
 async def main():
-    worker = RabbitWorker(settings.rabbit_url, settings.queue_name)
+    worker1 = RabbitWorker(settings.rabbit_url, settings.queue_name, handler=parse_msg)
+    worker2 = RabbitWorker(
+        settings.rabbit_url,
+        settings.rabbitmq_tg_commands_responses_queue_name,
+        handler=handle_tg_commands_responses,
+    )
 
     loop = asyncio.get_running_loop()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(
             sig,
-            lambda: asyncio.create_task(worker.stop()),
+            lambda: asyncio.create_task(asyncio.gather(worker1.stop(), worker2.stop())),
         )
 
     try:
-        await worker.start()
+        await asyncio.gather(worker1.start(), worker2.start())
     except asyncio.CancelledError:
         pass
     finally:
-        await worker.stop()
+        await asyncio.gather(worker1.stop(), worker2.stop())
 
 
 if __name__ == "__main__":

@@ -14,8 +14,8 @@ ModelType = TypeVar("ModelType", bound=Base)
 _OPERATORS = {
     "gte": lambda col, v: col >= v,
     "lte": lambda col, v: col <= v,
-    "gt":  lambda col, v: col > v,
-    "lt":  lambda col, v: col < v,
+    "gt": lambda col, v: col > v,
+    "lt": lambda col, v: col < v,
 }
 
 
@@ -41,7 +41,9 @@ class BaseRepository(Generic[ModelType]):
             if "__" in key:
                 field, op = key.rsplit("__", 1)
                 if hasattr(self.model, field) and op in _OPERATORS:
-                    query = query.where(_OPERATORS[op](getattr(self.model, field), value))
+                    query = query.where(
+                        _OPERATORS[op](getattr(self.model, field), value)
+                    )
             elif hasattr(self.model, key):
                 query = query.where(getattr(self.model, key) == value)
         if offset is not None:
@@ -73,12 +75,19 @@ class BaseRepository(Generic[ModelType]):
         await self.db.refresh(db_obj)
         return db_obj
 
-    async def update(self, db_obj: ModelType, obj_in: BaseModel) -> Optional[ModelType]:
+    # async def update(self, db_obj: ModelType, obj_in: BaseModel) -> Optional[ModelType]:
+    #     await self.db.execute(
+    #         update(self.model).where(self.model.id == db_obj.id).values(**obj_in)
+    #     )
+    #     await self.db.flush()
+    #     return await self.get_by_id(db_obj.id)
+
+    async def update(self, record_id: int, **kwargs) -> Optional[ModelType]:
         await self.db.execute(
-            update(self.model).where(self.model.id == id).values(**obj_in)
+            update(self.model).where(self.model.id == record_id).values(**kwargs)
         )
         await self.db.flush()
-        return await self.get_by_id(id)
+        return await self.find(record_id)
 
     async def delete(self, id: int) -> bool:
         result = await self.db.execute(delete(self.model).where(self.model.id == id))
