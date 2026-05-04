@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     db_echo: bool = False
     rabbit_url: str = ""
     queue_name: str = ""
-    rabbitmq_tg_commands_queue_name: str = ""
-    rabbitmq_tg_commands_responses_queue_name: str = ""
+    rabbitmq_tg_commands_queue: str = ""
+    rabbitmq_tg_commands_responses_queue: str = ""
     sentry_dsn: str = ""
 
 

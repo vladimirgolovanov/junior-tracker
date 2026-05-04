@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+
+import aio_pika
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
@@ -14,7 +17,19 @@ if settings.sentry_dsn:
         traces_sample_rate=1.0,
     )
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.rabbit_url:
+        app.state.rabbit_connection = await aio_pika.connect_robust(settings.rabbit_url)
+    else:
+        app.state.rabbit_connection = None
+    yield
+    if app.state.rabbit_connection:
+        await app.state.rabbit_connection.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(HTTPException)

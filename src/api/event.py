@@ -6,6 +6,7 @@ from src.auth.users import current_active_user
 from src.models import User
 from src.schemas.event import EventCreate, EventCreateInternal
 from src.services.event import EventService
+from src.services.rabbit_publisher import RabbitPublisher, get_publisher
 
 router = APIRouter()
 
@@ -25,8 +26,7 @@ async def events(
 async def create_event(
     event: EventCreate,
     service: EventService = Depends(),
+    publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
-    event_internal = EventCreateInternal(
-        **event.model_dump(),
-    )
-    return await service.create(event_internal)
+    event_internal = EventCreateInternal(**event.model_dump())
+    return await service.create(event_internal, publisher=publisher)

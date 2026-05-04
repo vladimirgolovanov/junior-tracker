@@ -111,7 +111,7 @@ async def main():
     worker1 = RabbitWorker(settings.rabbit_url, settings.queue_name, handler=parse_msg)
     worker2 = RabbitWorker(
         settings.rabbit_url,
-        settings.rabbitmq_tg_commands_responses_queue_name,
+        settings.rabbitmq_tg_commands_responses_queue,
         handler=handle_tg_commands_responses,
     )
 

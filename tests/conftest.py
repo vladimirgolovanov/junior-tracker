@@ -1,4 +1,5 @@
 import os
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -14,6 +15,7 @@ from src.auth.users import current_active_user
 from src.models import User, Child
 from src.models.base import Base
 from src.models.child import child_users
+from src.services.rabbit_publisher import get_publisher, RabbitPublisher
 
 os.environ["DATABASE_URL"] = (
     "postgresql+asyncpg://app_user:app_password@localhost:54321/test_db"
@@ -74,7 +76,9 @@ async def override_db(session):
     async def _get_test_db():
         yield session
 
+    mock_publisher = AsyncMock(spec=RabbitPublisher)
     app.dependency_overrides[get_db] = _get_test_db
+    app.dependency_overrides[get_publisher] = lambda: mock_publisher
 
     yield
 

@@ -32,6 +32,8 @@ class BaseRepository(Generic[ModelType]):
         self,
         limit: int | None = None,
         offset: int | None = None,
+        order_by: str | None = None,
+        order_dir: str = "asc",
         **filters: Any,
     ) -> list[ModelType]:
         query = select(self.model)
@@ -46,6 +48,9 @@ class BaseRepository(Generic[ModelType]):
                     )
             elif hasattr(self.model, key):
                 query = query.where(getattr(self.model, key) == value)
+        if order_by and hasattr(self.model, order_by):
+            col = getattr(self.model, order_by)
+            query = query.order_by(col.desc() if order_dir == "desc" else col.asc())
         if offset is not None:
             query = query.offset(offset)
         if limit is not None:

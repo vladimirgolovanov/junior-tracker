@@ -12,7 +12,7 @@ event_types = [
     {
         "type": "metric",
         "event_type_id": 5,
-        "keywords": ["смесь", "смест"],
+        "keywords": ["смесь"],
     },
     {
         "type": "described",
