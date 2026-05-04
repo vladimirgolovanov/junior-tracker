@@ -53,7 +53,7 @@ class EventService:
                     )
                     return db_event
                 event_types = await self.get_event_types(child.id)
-                formatter = TgMsgFormatter(event_types)
+                formatter = TgMsgFormatter(event_types, child.timezone)
                 event_type = await self.event_type_repository.find(event.event_type_id)
                 if event_type.format == "range_end":
                     start_event = await self.repository.get(

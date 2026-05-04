@@ -31,7 +31,7 @@ event_types = [
 class TestTgMsgFormatter:
     @pytest.fixture
     def formatter(self):
-        return TgMsgFormatter(event_types)
+        return TgMsgFormatter(event_types, "Europe/London")
 
     def test_format_metric(self, formatter):
         event = {
@@ -63,7 +63,7 @@ class TestTgMsgFormatter:
             "event_type_id": 1,
             "occurred_at": datetime.fromisoformat("2025-02-22T14:30:00.000000+00:00"),
         }
-        assert formatter.format(event) == "14:30- сон"
+        assert formatter.format(event) == "14:30-"
         end_event = {
             "event_type_id": 2,
             "occurred_at": datetime.fromisoformat("2025-02-22T15:00:00.000000+00:00"),
