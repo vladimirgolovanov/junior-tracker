@@ -12,7 +12,7 @@ class TgMsgFormatter:
                 if end_event:
                     return f"{event['occurred_at'].strftime('%H:%M')}-{end_event['occurred_at'].strftime('%H:%M')} {event_type['keywords'][0]}"
                 else:
-                    return f"{event['occurred_at'].strftime('%H:%M')}- {event_type['keywords'][0]}"
+                    return f"{event['occurred_at'].strftime('%H:%M')}-"
             case "metric":
                 return f"{event['occurred_at'].strftime('%H:%M')} {event_type['keywords'][0]} {event['volume']}"
             case "described":
