@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 
@@ -81,10 +82,11 @@ class Dashboard:
         )
 
         today_date = today
-        today_rows_a = await self.chart_repository.get_cycle_day_events(
+        today_rows = await self.chart_repository.get_cycle_day_events(
             child, today_date, event_type_ids
         )
-        today_rows = isolator.isolate(today_rows_a, today_date, event_type_ids)
+        today_rows = isolator.isolate(today_rows, today_date, event_type_ids)
+        logging.info(today_rows)
 
         return {
             "today": builder.build(

@@ -1,77 +1,103 @@
-from datetime import datetime, date
-
 from src.constants.sleep import DAY_START
 
 
+from dataclasses import dataclass, field
+from datetime import date, datetime
+
+
+@dataclass
+class _IsolationContext:
+    day_start_dt: datetime
+    sleep_start_id: int
+    sleep_end_id: int
+    events: list = field(default_factory=list)
+    earliest_wake_up: datetime | None = None
+    overnight_sleep_started: bool = False
+    done: bool = False
+
+
 class CycleDayEventsIsolator:
-    def isolate(self, rows: list, day_date: date, event_type_ids: tuple) -> list[dict]:
-        sleep_start_id, sleep_end_id = event_type_ids
-        day_events = []
-        earliest_start = None
-        latest_event = None
-        for row in rows:
-            day_start_dt = datetime.combine(row["occurred_at"].date(), DAY_START)
+    def isolate(
+        self,
+        event_rows: list,
+        day_date: date,
+        event_type_ids: tuple,
+    ) -> list[dict]:
+        ctx = self._build_context(day_date, event_type_ids)
 
-            if row["occurred_at"].date() == day_date:
-                if (
-                    row["event_type_id"] == sleep_start_id
-                    and row["occurred_at"] < day_start_dt
-                ):
-                    continue
-                if (
-                    row["event_type_id"] == sleep_end_id
-                    and row["occurred_at"] < day_start_dt
-                ):
-                    earliest_start = row["occurred_at"]
-                    continue
+        for row in event_rows:
+            is_target_date = row["occurred_at"].date() == day_date
 
-                if (
-                    row["event_type_id"] == sleep_start_id
-                    and earliest_start is not None
-                    and not day_events
-                ):
-                    day_events.append(
-                        {"event_type_id": sleep_end_id, "occurred_at": earliest_start}
-                    )
-                    earliest_start = None
-
-                day_events.append(
-                    {
-                        "event_type_id": row["event_type_id"],
-                        "occurred_at": row["occurred_at"],
-                    }
-                )
-
+            if is_target_date:
+                self._process_target_date_row(row, ctx)
             else:
-                if row["occurred_at"] < day_start_dt:
-                    day_events.append(
-                        {
-                            "event_type_id": row["event_type_id"],
-                            "occurred_at": row["occurred_at"],
-                        }
-                    )
-                    latest_event = {
-                        "event_type_id": row["event_type_id"],
-                        "occurred_at": row["occurred_at"],
-                    }
-                    continue
+                self._process_other_date_row(row, ctx)
 
-                if latest_event is None:
-                    continue
-                elif (
-                    latest_event["event_type_id"] == sleep_start_id
-                    and row["event_type_id"] == sleep_end_id
-                ):
-                    day_events.append(
-                        {
-                            "event_type_id": row["event_type_id"],
-                            "occurred_at": row["occurred_at"],
-                        }
-                    )
-                    latest_event = {
-                        "event_type_id": row["event_type_id"],
-                        "occurred_at": row["occurred_at"],
-                    }
-                    break
+            if ctx.done:
+                break
 
-        return day_events
+        return ctx.events
+
+    @staticmethod
+    def _build_context(day_date: date, event_type_ids: tuple) -> _IsolationContext:
+        sleep_start_id, sleep_end_id = event_type_ids
+        return _IsolationContext(
+            day_start_dt=datetime.combine(day_date, DAY_START),
+            sleep_start_id=sleep_start_id,
+            sleep_end_id=sleep_end_id,
+        )
+
+    def _process_target_date_row(self, row: dict, ctx: _IsolationContext) -> None:
+        event_type = row["event_type_id"]
+        occurred_at = row["occurred_at"]
+        is_before_day_start = occurred_at < ctx.day_start_dt
+
+        if is_before_day_start:
+            self._handle_before_day_start(event_type, occurred_at, ctx)
+        else:
+            self._handle_active_day_zone(event_type, occurred_at, ctx)
+
+    def _handle_before_day_start(
+        self,
+        event_type: int,
+        occurred_at: datetime,
+        ctx: _IsolationContext,
+    ) -> None:
+        if event_type == ctx.sleep_end_id:
+            ctx.earliest_wake_up = occurred_at
+
+    def _handle_active_day_zone(
+        self,
+        event_type: int,
+        occurred_at: datetime,
+        ctx: _IsolationContext,
+    ) -> None:
+        had_early_wakeup = ctx.earliest_wake_up is not None
+        day_not_started = not ctx.events
+        is_sleep_start = event_type == ctx.sleep_start_id
+
+        if is_sleep_start and had_early_wakeup and day_not_started:
+            ctx.events.append(self.make_event(ctx.sleep_end_id, ctx.earliest_wake_up))
+            ctx.earliest_wake_up = None
+
+        ctx.events.append(self.make_event(event_type, occurred_at))
+
+        if is_sleep_start:
+            ctx.overnight_sleep_started = True
+
+    def _process_other_date_row(self, row: dict, ctx: _IsolationContext) -> None:
+        if not ctx.overnight_sleep_started:
+            return
+
+        event_type = row["event_type_id"]
+        occurred_at = row["occurred_at"]
+
+        if event_type != ctx.sleep_end_id:
+            return
+
+        ctx.events.append(self.make_event(event_type, occurred_at))
+        ctx.done = True
+
+    @staticmethod
+    def make_event(event_type_id: int, occurred_at: datetime) -> dict:
+        return {"event_type_id": event_type_id, "occurred_at": occurred_at}

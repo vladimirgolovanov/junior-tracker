@@ -46,36 +46,15 @@ SCENARIO_2 = (
 
 SCENARIO_3 = (
     [
-        # {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 7, 55)},
-        # {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 9, 20)},
-        # {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 10, 45)},
-        # {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 13, 30)},
-        # {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 14, 5)},
-        # {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 18, 5)},
-        # {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 18, 35)},
-        # {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 19, 50)},
-        # {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 28, 6, 40)},
-        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 7, 55)},  # -
-        {
-            "event_type_id": SLEEP_ID,
-            "occurred_at": datetime(2026, 3, 27, 9, 20),
-        },  # 85 +
-        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 10, 45)},  # 85
-        {
-            "event_type_id": SLEEP_ID,
-            "occurred_at": datetime(2026, 3, 27, 13, 30),
-        },  # 165 +
-        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 14, 5)},  # 35
-        {
-            "event_type_id": SLEEP_ID,
-            "occurred_at": datetime(2026, 3, 27, 18, 5),
-        },  # 240 +
-        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 18, 35)},  # 30
-        {
-            "event_type_id": SLEEP_ID,
-            "occurred_at": datetime(2026, 3, 27, 19, 50),
-        },  # 75 +
-        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 28, 6, 40)},  # 650
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 7, 55)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 9, 20)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 10, 45)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 13, 30)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 14, 5)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 18, 5)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 18, 35)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 3, 27, 19, 50)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 28, 6, 40)},
     ],
     datetime(2026, 3, 28, 7, 10),
     {
@@ -96,9 +75,54 @@ SCENARIO_3 = (
     False,
 )
 
+SCENARIO_4 = (
+    [
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 6, 30)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 8, 45)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 9, 55)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 13, 40)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 14, 50)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 19, 35)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 5, 7, 0)},
+    ],
+    datetime(2026, 5, 5, 7, 10),
+    {
+        "segments": [
+            {
+                "time": 135,
+                "start": "06:30",
+                "end": "08:45",
+                "segment_type": "day_awake",
+            },
+            {"time": 70, "start": "08:45", "end": "09:55", "segment_type": "day_sleep"},
+            {
+                "time": 225,
+                "start": "09:55",
+                "end": "13:40",
+                "segment_type": "day_awake",
+            },
+            {"time": 70, "start": "13:40", "end": "14:50", "segment_type": "day_sleep"},
+            {
+                "time": 285,
+                "start": "14:50",
+                "end": "19:35",
+                "segment_type": "day_awake",
+            },
+            {
+                "time": 685,
+                "start": "19:35",
+                "end": "07:00",
+                "segment_type": "night_sleep",
+            },
+        ],
+    },
+    False,
+)
+
 
 @pytest.mark.parametrize(
-    "rows, current_time, expected, is_today", [SCENARIO_1, SCENARIO_2, SCENARIO_3]
+    "rows, current_time, expected, is_today",
+    [SCENARIO_1, SCENARIO_2, SCENARIO_3, SCENARIO_4],
 )
 def test_current_awake_when_child_is_awake(rows, current_time, expected, is_today):
     result = CycleDaySleepData().build(
