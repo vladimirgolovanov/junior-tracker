@@ -40,7 +40,7 @@ class RabbitWorker:
 
     async def connect(self):
         logger.info("Connecting to RabbitMQ...")
-        self._connection = await aio_pika.connect_robust(self.rabbit_url)
+        self._connection = await aio_pika.connect_robust(self.rabbit_url, heartbeat=60)
         self._channel = await self._connection.channel()
 
         await self._channel.set_qos(prefetch_count=PREFETCH_COUNT)
