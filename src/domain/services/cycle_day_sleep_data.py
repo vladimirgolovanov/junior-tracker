@@ -34,7 +34,7 @@ class CycleDaySleepData:
         night_segments = [s for s in segments if s["segment_type"] == "night_sleep"]
         bedtime = night_segments[0]["start_dt"] if night_segments else None
 
-        return {
+        result = {
             "segments": segments,
             "bedtime": bedtime,
             "current_sleep": int(current_sleep // 60),
@@ -49,6 +49,11 @@ class CycleDaySleepData:
             "awake_time": rows[0]["occurred_at"] if rows else None,
             "cycle_length": int(sum_data["cycle_length"] // 60),
         }
+
+        if is_today:
+            result["is_current_asleep"] = rows[-1]["event_type_id"] == sleep_start_id
+
+        return result
 
     def _build_empty(
         self,
@@ -67,8 +72,9 @@ class CycleDaySleepData:
             elif rows[-1]["event_type_id"] == sleep_end_id:
                 current_awake = delta
 
-        return {
+        result = {
             "segments": [],
+            "bedtime": None,
             "current_sleep": int(current_sleep // 60),
             "current_awake": int(current_awake // 60),
             "total_sleep_duration": 0,
@@ -78,7 +84,16 @@ class CycleDaySleepData:
             "day_awake_duration": 0,
             "night_awake_duration": 0,
             "night_sleep_end": None,
+            "awake_time": None,
+            "cycle_length": 0,
         }
+
+        if is_today:
+            result["is_current_asleep"] = (
+                rows[-1]["event_type_id"] == sleep_start_id if rows else False
+            )
+
+        return result
 
     def _build_sleep_segments(self, segments: list[dict]) -> tuple[list, list]:
         day_sleeps = [s for s in segments if s["segment_type"] == "day_sleep"]

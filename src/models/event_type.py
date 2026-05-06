@@ -14,5 +14,6 @@ class EventType(Base):
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("event_types.id"), nullable=True
     )
+    color: Mapped[str | None] = mapped_column(String, nullable=True)
 
     child_id: Mapped[int] = mapped_column(ForeignKey("childs.id"))

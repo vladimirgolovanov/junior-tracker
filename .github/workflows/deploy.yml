@@ -56,6 +56,35 @@ jobs:
       - name: Deploy
         run: |
           kubectl apply -f k8s/
+
+      - name: Run migrations
+        run: |
+          kubectl delete job junior-tracker-migrate -n junior-tracker --ignore-not-found
+          kubectl apply -f - <<'EOF'
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: junior-tracker-migrate
+            namespace: junior-tracker
+          spec:
+            template:
+              spec:
+                imagePullSecrets:
+                  - name: ghcr-secret
+                containers:
+                  - name: migrate
+                    image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+                    command: ["alembic", "upgrade", "head"]
+                    envFrom:
+                      - secretRef:
+                          name: junior-tracker-env
+                restartPolicy: Never
+            backoffLimit: 0
+          EOF
+          kubectl wait job/junior-tracker-migrate -n junior-tracker --for=condition=complete --timeout=120s
+
+      - name: Restart deployments
+        run: |
           kubectl rollout restart deployment/junior-tracker-api -n junior-tracker
           kubectl rollout restart deployment/junior-tracker-worker -n junior-tracker
           kubectl rollout status deployment/junior-tracker-api -n junior-tracker --timeout=120s

@@ -10,7 +10,7 @@ engine = create_async_engine(
     settings.db_url,
     echo=settings.db_echo,
     echo_pool=settings.db_echo,
-    pool_size=3,
+    pool_size=10,
     max_overflow=2,
     pool_timeout=30,
     pool_recycle=1800,
