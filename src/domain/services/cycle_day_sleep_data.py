@@ -68,6 +68,7 @@ class CycleDaySleepData:
                 current_awake = delta
 
         return {
+            "segments": [],
             "current_sleep": int(current_sleep // 60),
             "current_awake": int(current_awake // 60),
             "total_sleep_duration": 0,
