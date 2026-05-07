@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     rabbitmq_tg_commands_queue: str = ""
     rabbitmq_tg_commands_responses_queue: str = ""
     sentry_dsn: str = ""
+    token_lifetime_seconds: int = 60 * 60 * 24 * 14
 
 
 settings = Settings()

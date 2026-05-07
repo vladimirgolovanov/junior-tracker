@@ -10,6 +10,7 @@ from src.auth.users import fastapi_users, auth_backend
 from src.schemas.user import UserRead, UserCreate
 from src.api import router as api_router
 from src.config import settings
+from src.mcp.server import build_mcp_asgi_app
 
 if settings.sentry_dsn:
     sentry_sdk.init(
@@ -70,3 +71,5 @@ app.include_router(
 )
 
 app.include_router(api_router)
+
+app.mount("/mcp", build_mcp_asgi_app())
