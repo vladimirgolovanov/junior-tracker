@@ -14,7 +14,7 @@ class CycleDaySleepData:
     ) -> dict:
         sleep_start_id, sleep_end_id = event_type_ids
 
-        if len(rows) == 0:
+        if len(rows) < 2:
             return self._build_empty(
                 rows, sleep_start_id, sleep_end_id, is_today, current_time
             )
@@ -65,10 +65,12 @@ class CycleDaySleepData:
     ) -> dict:
         current_sleep, current_awake = 0, 0
 
+        is_current_asleep = False
         if is_today and rows:
             delta = (current_time - rows[-1]["occurred_at"]).total_seconds()
             if rows[-1]["event_type_id"] == sleep_start_id:
                 current_sleep = delta
+                is_current_asleep = True
             elif rows[-1]["event_type_id"] == sleep_end_id:
                 current_awake = delta
 
@@ -88,10 +90,8 @@ class CycleDaySleepData:
             "cycle_length": 0,
         }
 
-        if is_today:
-            result["is_current_asleep"] = (
-                rows[-1]["event_type_id"] == sleep_start_id if rows else False
-            )
+        if is_today and is_current_asleep:
+            result["is_current_asleep"] = True
 
         return result
 

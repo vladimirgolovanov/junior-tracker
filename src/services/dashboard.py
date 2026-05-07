@@ -59,8 +59,8 @@ class Dashboard:
             "occurred_at__gt": today,
         }
         today_wakeup_events = await self.event_repository.get(**filters)
-        if not today_wakeup_events:
-            today = today - timedelta(days=1)
+        # if not today_wakeup_events:
+        #     today = today - timedelta(days=1)
 
         isolator = CycleDayEventsIsolator()
         builder = CycleDaySleepData()
