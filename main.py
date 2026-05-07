@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 
+# from starlette.middleware.base import BaseHTTPMiddleware
+
 import aio_pika
 import sentry_sdk
 from fastapi import FastAPI, Request
@@ -7,10 +9,13 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
 from src.auth.users import fastapi_users, auth_backend
+
+# from src.mcp.server import build_mcp_asgi_app
 from src.schemas.user import UserRead, UserCreate
 from src.api import router as api_router
 from src.config import settings
-from src.mcp.server import build_mcp_asgi_app
+from src.mcp.auth import MCPBearerAuthMiddleware
+from src.mcp.tools import mcp
 
 if settings.sentry_dsn:
     sentry_sdk.init(
@@ -25,7 +30,10 @@ async def lifespan(app: FastAPI):
         app.state.rabbit_connection = await aio_pika.connect_robust(settings.rabbit_url)
     else:
         app.state.rabbit_connection = None
-    yield
+
+    async with mcp.session_manager.run():  # ← это фикс
+        yield
+
     if app.state.rabbit_connection:
         await app.state.rabbit_connection.close()
 
@@ -72,4 +80,8 @@ app.include_router(
 
 app.include_router(api_router)
 
-app.mount("/mcp", build_mcp_asgi_app())
+# app.mount("/mcp", build_mcp_asgi_app())
+
+mcp_asgi = mcp.streamable_http_app()
+mcp_asgi.add_middleware(MCPBearerAuthMiddleware)
+app.mount("/mcp", mcp_asgi)
