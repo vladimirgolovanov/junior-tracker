@@ -14,7 +14,7 @@ class CycleDaySleepData:
     ) -> dict:
         sleep_start_id, sleep_end_id = event_type_ids
 
-        if len(rows) < 2:
+        if len(rows) == 0:
             return self._build_empty(
                 rows, sleep_start_id, sleep_end_id, is_today, current_time
             )
