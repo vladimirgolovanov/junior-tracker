@@ -12,8 +12,17 @@ from src.repositories.chart import ChartRepository
 from src.repositories.child import ChildRepository
 from src.services.chart import Chart
 from src.services.daily import TimelineService
+from mcp.server.transport_security import TransportSecuritySettings
 
-mcp = FastMCP("junior-tracker", streamable_http_path="/")
+mcp = FastMCP(
+    "junior-tracker",
+    streamable_http_path="/",
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=["tracker.golovanov.me"],
+        allowed_origins=["https://tracker.golovanov.me"],
+    ),
+)
 
 
 def _make_chart_service(session) -> Chart:
@@ -76,9 +85,7 @@ async def get_chart_data(
             "day": seg["day"],
             "start": seg["start"].isoformat(),
             "end": seg["end"].isoformat(),
-            "duration_minutes": round(
-                (seg["end"] - seg["start"]).total_seconds() / 60
-            ),
+            "duration_minutes": round((seg["end"] - seg["start"]).total_seconds() / 60),
         }
         for seg in segments
     ]
