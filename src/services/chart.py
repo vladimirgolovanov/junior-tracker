@@ -45,3 +45,22 @@ class Chart:
         )
 
         return self.service.get_range_events(rows, event_type_ids)
+
+    async def get_sleep_events(
+        self,
+        user: User,
+        child_id: int,
+        date_from: date,
+        date_to: date,
+    ):
+        child = await self.child_repository.find(
+            child_id, options=[selectinload(Child.users)]
+        )
+
+        if child is None:
+            raise HTTPException(status_code=404, detail="Child not found")
+
+        if not any(u.id == user.id for u in child.users):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        return await self.chart_repository.get_sleep_events(child_id, date_from, date_to)

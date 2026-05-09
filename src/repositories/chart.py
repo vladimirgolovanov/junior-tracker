@@ -43,6 +43,31 @@ class ChartRepository:
 
         return [dict(row) for row in results.mappings().all()]
 
+    async def get_sleep_events(
+        self,
+        child_id: int,
+        date_from: date,
+        date_to: date,
+    ):
+        query = text("""
+                     SELECT child_id, start, "end"
+                     FROM sleep_events
+                     WHERE child_id = :child_id
+                       AND start::date BETWEEN :date_from AND :date_to
+                     ORDER BY start
+                     """)
+
+        results = await self.db.execute(
+            query,
+            {
+                "child_id": child_id,
+                "date_from": date_from,
+                "date_to": date_to,
+            },
+        )
+
+        return [dict(row) for row in results.mappings().all()]
+
     async def get_plain_events(self):
         pass
 

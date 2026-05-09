@@ -50,6 +50,20 @@ async def chart(  # todo: validation dates + event_type_ids
     }
 
 
+@router.get("/sleep")
+async def sleep_events(
+    child_id: Annotated[int, Query()],
+    date_from: Annotated[date, Query()],
+    date_to: Annotated[date, Query()],
+    service: Chart = Depends(),
+    user: User = Depends(current_active_user),
+):
+    if date_from > date_to:
+        raise HTTPException(status_code=422, detail="date_from must be before date_to")
+
+    return await service.get_sleep_events(user, child_id, date_from, date_to)
+
+
 @router.get("/dashboard")
 async def dashboard(
     child_id: Annotated[int, Query()],
