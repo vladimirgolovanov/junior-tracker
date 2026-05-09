@@ -7,6 +7,7 @@ from src.api.keys import router as keys_router
 from src.api.device import router as device_router
 from src.api.chart import router as chart_router
 from src.api.child import router as child_router
+from src.api.analytics import router as analytics_router
 from src.services.api_keys import get_api_key
 
 router = APIRouter(prefix="/api")
@@ -50,5 +51,12 @@ router.include_router(
     router=event_type_router,
     prefix="/event_types",
     tags=["event_types"],
+    dependencies=[Depends(current_active_user)],
+)
+
+router.include_router(
+    router=analytics_router,
+    prefix="/analytics",
+    tags=["analytics"],
     dependencies=[Depends(current_active_user)],
 )
