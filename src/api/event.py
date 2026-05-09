@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException
 
 from src.auth.users import current_active_user
 from src.models import User
-from src.schemas.event import EventCreate, EventCreateInternal
+from src.schemas.event import EventCreate, EventCreateInternal, EventUpdate
 from src.services.event import EventService
 from src.services.rabbit_publisher import RabbitPublisher, get_publisher
 
@@ -28,6 +28,34 @@ async def events(
         occurred_at__gte=date_from,
         occurred_at__lte=date_to,
     )
+
+
+@router.patch("/{event_id}")
+async def update_event(
+    event_id: int,
+    data: EventUpdate,
+    background_tasks: BackgroundTasks,
+    user: CurrentUser,
+    service: EventService = Depends(),
+    publisher: RabbitPublisher | None = Depends(get_publisher),
+):
+    event = await service.update(event_id, data, publisher=publisher, background_tasks=background_tasks)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+
+@router.delete("/{event_id}", status_code=204)
+async def delete_event(
+    event_id: int,
+    background_tasks: BackgroundTasks,
+    user: CurrentUser,
+    service: EventService = Depends(),
+    publisher: RabbitPublisher | None = Depends(get_publisher),
+):
+    deleted = await service.delete(event_id, publisher=publisher, background_tasks=background_tasks)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Event not found")
 
 
 @router.post("/")

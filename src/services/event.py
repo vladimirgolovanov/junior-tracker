@@ -10,7 +10,7 @@ from src.models import User, Event
 from src.models.child import Child
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
-from src.schemas.event import EventCreateInternal
+from src.schemas.event import EventCreateInternal, EventUpdate
 from src.services.tg_msg_formatter import TgMsgFormatter
 from src.services.update_analytics import UpdateAnalytics
 
@@ -108,6 +108,129 @@ class EventService:
     async def get(self, user: User, child_id: int, **kwargs):
         # todo: check if child belongs to user
         return await self.repository.get(child_id=child_id, **kwargs)
+
+    async def update(
+        self,
+        event_id: int,
+        data: EventUpdate,
+        publisher: "RabbitPublisher | None" = None,
+        background_tasks: "BackgroundTasks | None" = None,
+    ) -> Optional[Event]:
+        existing = await self.repository.find(event_id)
+        if existing is None:
+            return None
+
+        updated = await self.repository.update(
+            event_id, **data.model_dump(exclude_unset=True)
+        )
+
+        if background_tasks:
+            background_tasks.add_task(
+                UpdateAnalytics(self.db).update, existing.child_id, existing.occurred_at
+            )
+            if updated.occurred_at != existing.occurred_at:
+                background_tasks.add_task(
+                    UpdateAnalytics(self.db).update,
+                    existing.child_id,
+                    updated.occurred_at,
+                )
+
+        if publisher:
+            await self._publish_event_updated(updated, publisher)
+
+        return updated
+
+    async def delete(
+        self,
+        event_id: int,
+        publisher: "RabbitPublisher | None" = None,
+        background_tasks: "BackgroundTasks | None" = None,
+    ) -> bool:
+        existing = await self.repository.find(event_id)
+        if existing is None:
+            return False
+
+        deleted = await self.repository.delete(event_id)
+
+        if deleted:
+            if background_tasks:
+                background_tasks.add_task(
+                    UpdateAnalytics(self.db).update,
+                    existing.child_id,
+                    existing.occurred_at,
+                )
+            if publisher:
+                await self._publish_event_deleted(existing, publisher)
+
+        return deleted
+
+    async def _publish_event_updated(
+        self, db_event: Event, publisher: "RabbitPublisher"
+    ) -> None:
+        try:
+            child = (
+                await self.db.execute(
+                    select(Child).where(Child.id == db_event.child_id)
+                )
+            ).scalar_one_or_none()
+
+            if not child or not child.tg_chat_id or not db_event.tg_message_id:
+                return
+
+            event_types = await self.get_event_types(child.id)
+            formatter = TgMsgFormatter(event_types, child.timezone)
+            event_type = await self.event_type_repository.find(db_event.event_type_id)
+
+            # if event_type.format == "range":
+            # todo: find end event type
+            #       find end event
+            #       format message by end event
+            if event_type.format == "range_end":
+                start_event = await self.repository.get(
+                    limit=1,
+                    order_by="occurred_at",
+                    order_dir="desc",
+                    event_type_id=event_type.parent_id,
+                )
+                if not start_event:
+                    return
+                message_text = formatter.format(
+                    start_event[0].__dict__, db_event.__dict__
+                )
+            else:
+                message_text = formatter.format(db_event.__dict__)
+
+            await publisher.publish_event_updated(
+                db_event.id, child.tg_chat_id, message_text, db_event.tg_message_id
+            )
+        except Exception:
+            logger.exception(
+                "Failed to publish event_updated for event_id=%s", db_event.id
+            )
+
+    async def _publish_event_deleted(
+        self, db_event: Event, publisher: "RabbitPublisher"
+    ) -> None:
+        try:
+            if not db_event.tg_message_id:
+                return
+
+            child = (
+                await self.db.execute(
+                    select(Child).where(Child.id == db_event.child_id)
+                )
+            ).scalar_one_or_none()
+
+            if not child or not child.tg_chat_id:
+                return
+
+            await publisher.publish_event_deleted(
+                db_event.id, child.tg_chat_id, db_event.tg_message_id
+            )
+        except Exception:
+            logger.exception(
+                "Failed to publish event_deleted for event_id=%s", db_event.id
+            )
 
     async def get_event_types(self, child_id: int):
         query = text("""SELECT id,

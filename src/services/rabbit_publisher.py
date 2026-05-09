@@ -77,6 +77,30 @@ class RabbitPublisher:
             await channel.close()
 
 
+    async def publish_event_deleted(
+        self, event_id: int, chat_id_str: str, tg_message_id: int
+    ) -> None:
+        payload = {
+            "id": event_id,
+            "action": "delete",
+            "chat_id": int(chat_id_str),
+            "tg_message_id": tg_message_id,
+        }
+        channel = await self._connection.channel()
+        try:
+            await channel.declare_queue(settings.rabbitmq_tg_commands_queue, durable=True)
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(payload).encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                ),
+                routing_key=settings.rabbitmq_tg_commands_queue,
+            )
+            logger.info("Published event_deleted for event_id=%s", event_id)
+        finally:
+            await channel.close()
+
+
 async def get_publisher(request: Request) -> "RabbitPublisher | None":
     connection = request.app.state.rabbit_connection
     if connection is None:

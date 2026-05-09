@@ -18,3 +18,9 @@ class EventCreate(Event):
 
 class EventCreateInternal(EventCreate):
     pass  # todo: remove
+
+
+class EventUpdate(BaseModel):
+    occurred_at: datetime | None = None
+    volume: int | None = None
+    description: str | None = None
