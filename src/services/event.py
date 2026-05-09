@@ -11,6 +11,7 @@ from src.models.child import Child
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.schemas.event import EventCreateInternal, EventUpdate
+from src.services.child_access import ChildAccessGuard
 from src.services.tg_msg_formatter import TgMsgFormatter
 from src.services.update_analytics import UpdateAnalytics
 
@@ -24,10 +25,12 @@ class EventService:
     def __init__(
         self,
         db: AsyncSession = Depends(get_db),
+        child_guard: ChildAccessGuard = Depends(ChildAccessGuard),
     ):
         self.db = db
         self.repository = EventRepository(db)
         self.event_type_repository = EventTypeRepository(db)
+        self.child_guard = child_guard
 
     async def create(
         self,
@@ -106,19 +109,22 @@ class EventService:
         return await self.repository.update_or_create(event, events_count=events_count)
 
     async def get(self, user: User, child_id: int, **kwargs):
-        # todo: check if child belongs to user
+        await self.child_guard.assert_access(user, child_id)
         return await self.repository.get(child_id=child_id, **kwargs)
 
     async def update(
         self,
         event_id: int,
         data: EventUpdate,
+        user: "User | None" = None,
         publisher: "RabbitPublisher | None" = None,
         background_tasks: "BackgroundTasks | None" = None,
     ) -> Optional[Event]:
         existing = await self.repository.find(event_id)
         if existing is None:
             return None
+        if user is not None:
+            await self.child_guard.assert_access(user, existing.child_id)
 
         updated = await self.repository.update(
             event_id, **data.model_dump(exclude_unset=True)
@@ -143,12 +149,15 @@ class EventService:
     async def delete(
         self,
         event_id: int,
+        user: "User | None" = None,
         publisher: "RabbitPublisher | None" = None,
         background_tasks: "BackgroundTasks | None" = None,
     ) -> bool:
         existing = await self.repository.find(event_id)
         if existing is None:
             return False
+        if user is not None:
+            await self.child_guard.assert_access(user, existing.child_id)
 
         deleted = await self.repository.delete(event_id)
 

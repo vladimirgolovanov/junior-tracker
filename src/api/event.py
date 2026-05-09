@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException
@@ -22,6 +22,10 @@ async def events(
     date_to: Annotated[datetime | None, Query()] = None,
     service: EventService = Depends(),
 ):
+    if date_to is not None:
+        if date_to.time() == time.min:
+            date_to = datetime.combine(date_to.date(), time.max)
+
     return await service.get(
         user,
         child_id,
@@ -39,7 +43,13 @@ async def update_event(
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
-    event = await service.update(event_id, data, publisher=publisher, background_tasks=background_tasks)
+    event = await service.update(
+        event_id,
+        data,
+        user=user,
+        publisher=publisher,
+        background_tasks=background_tasks,
+    )
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
@@ -53,7 +63,9 @@ async def delete_event(
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
-    deleted = await service.delete(event_id, publisher=publisher, background_tasks=background_tasks)
+    deleted = await service.delete(
+        event_id, user=user, publisher=publisher, background_tasks=background_tasks
+    )
     if not deleted:
         raise HTTPException(status_code=404, detail="Event not found")
 

@@ -2,27 +2,26 @@ import logging
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import selectinload
+from fastapi import Depends
 
 from src.domain.services.cycle_day_events_isolator import CycleDayEventsIsolator
 from src.domain.services.cycle_day_sleep_data import CycleDaySleepData
-from src.models import Child, User
+from src.models import User
 from src.repositories.chart import ChartRepository
-from src.repositories.child import ChildRepository
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
+from src.services.child_access import ChildAccessGuard
 
 
 class Dashboard:
     def __init__(
         self,
-        child_repository: ChildRepository = Depends(ChildRepository),
+        child_guard: ChildAccessGuard = Depends(ChildAccessGuard),
         chart_repository: ChartRepository = Depends(ChartRepository),
         event_type_repository: EventTypeRepository = Depends(EventTypeRepository),
         event_repository: EventRepository = Depends(EventRepository),
     ):
-        self.child_repository = child_repository
+        self.child_guard = child_guard
         self.chart_repository = chart_repository
         self.event_type_repository = event_type_repository
         self.event_repository = event_repository
@@ -34,17 +33,10 @@ class Dashboard:
         today: date = None,
         current_time: datetime = None,
     ):
-        child = await self.child_repository.find(
-            child_id, options=[selectinload(Child.users)]
-        )
-        if child is None:
-            raise HTTPException(status_code=404, detail="Child not found")
+        child = await self.child_guard.assert_access(user, child_id)
 
         child_tz = ZoneInfo(child.timezone)
         current_time = current_time.astimezone(child_tz).replace(tzinfo=None)
-
-        if not any(u.id == user.id for u in child.users):
-            raise HTTPException(status_code=403, detail="Access denied")
 
         event_type_ids = await self.event_type_repository.get_sleep_event_types(
             child.id

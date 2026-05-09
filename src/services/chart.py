@@ -1,11 +1,9 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from datetime import date
 
-from sqlalchemy.orm import selectinload
-
-from src.models import User, Child
+from src.models import User
 from src.repositories.chart import ChartRepository
-from src.repositories.child import ChildRepository
+from src.services.child_access import ChildAccessGuard
 from src.services.daily import TimelineService
 
 
@@ -14,11 +12,11 @@ class Chart:
         self,
         service: TimelineService = Depends(TimelineService),
         chart_repository: ChartRepository = Depends(ChartRepository),
-        child_repository: ChildRepository = Depends(ChildRepository),
+        child_guard: ChildAccessGuard = Depends(ChildAccessGuard),
     ):
         self.service = service
         self.chart_repository = chart_repository
-        self.child_repository = child_repository
+        self.child_guard = child_guard
 
     async def get_chart_data(
         self,
@@ -30,15 +28,7 @@ class Chart:
     ):
         event_type_ids = tuple(event_type_ids)
 
-        child = await self.child_repository.find(
-            child_id, options=[selectinload(Child.users)]
-        )
-
-        if child is None:
-            raise HTTPException(status_code=404, detail="Child not found")
-
-        if not any(u.id == user.id for u in child.users):
-            raise HTTPException(status_code=403, detail="Access denied")
+        child = await self.child_guard.assert_access(user, child_id)
 
         rows = await self.chart_repository.get_range_events(
             child, date_from, date_to, event_type_ids
@@ -53,28 +43,12 @@ class Chart:
         date_from: date,
         date_to: date,
     ):
-        child = await self.child_repository.find(
-            child_id, options=[selectinload(Child.users)]
-        )
-
-        if child is None:
-            raise HTTPException(status_code=404, detail="Child not found")
-
-        if not any(u.id == user.id for u in child.users):
-            raise HTTPException(status_code=403, detail="Access denied")
+        await self.child_guard.assert_access(user, child_id)
 
         return await self.chart_repository.get_sleep_events(child_id, date_from, date_to)
 
     async def get_child_status(self, user: User, child_id: int):
-        child = await self.child_repository.find(
-            child_id, options=[selectinload(Child.users)]
-        )
-
-        if child is None:
-            raise HTTPException(status_code=404, detail="Child not found")
-
-        if not any(u.id == user.id for u in child.users):
-            raise HTTPException(status_code=403, detail="Access denied")
+        await self.child_guard.assert_access(user, child_id)
 
         sleep_row = await self.chart_repository.get_sleep_status(child_id)
         if sleep_row:
