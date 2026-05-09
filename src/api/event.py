@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 
 from src.auth.users import current_active_user
 from src.models import User
@@ -25,8 +25,11 @@ async def events(
 @router.post("/")
 async def create_event(
     event: EventCreate,
+    background_tasks: BackgroundTasks,
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
     event_internal = EventCreateInternal(**event.model_dump())
-    return await service.create(event_internal, publisher=publisher)
+    return await service.create(
+        event_internal, publisher=publisher, background_tasks=background_tasks
+    )

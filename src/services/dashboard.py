@@ -37,10 +37,10 @@ class Dashboard:
         child = await self.child_repository.find(
             child_id, options=[selectinload(Child.users)]
         )
-
-        child_tz = ZoneInfo(child.timezone)
         if child is None:
             raise HTTPException(status_code=404, detail="Child not found")
+
+        child_tz = ZoneInfo(child.timezone)
         current_time = current_time.astimezone(child_tz).replace(tzinfo=None)
 
         if not any(u.id == user.id for u in child.users):
@@ -53,12 +53,12 @@ class Dashboard:
         if today is None:
             today = datetime.now().date()
 
-        filters = {
-            "child_id": child.id,
-            "event_type_id": event_type_ids[1],
-            "occurred_at__gt": today,
-        }
-        today_wakeup_events = await self.event_repository.get(**filters)
+        # filters = {
+        #     "child_id": child.id,
+        #     "event_type_id": event_type_ids[1],
+        #     "occurred_at__gt": today,
+        # }
+        # today_wakeup_events = await self.event_repository.get(**filters)
         # if not today_wakeup_events:
         #     today = today - timedelta(days=1)
 

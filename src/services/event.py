@@ -1,19 +1,18 @@
 import logging
 from typing import Optional, TYPE_CHECKING
 
-from fastapi import Depends
+from fastapi import Depends, BackgroundTasks
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db_helper import get_db
 from src.models import User, Event
 from src.models.child import Child
-from src.models.event_type import EventType
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.schemas.event import EventCreateInternal
-from src.services.rabbit_publisher import format_event_text
 from src.services.tg_msg_formatter import TgMsgFormatter
+from src.services.update_analytics import UpdateAnalytics
 
 if TYPE_CHECKING:
     from src.services.rabbit_publisher import RabbitPublisher
@@ -34,59 +33,67 @@ class EventService:
         self,
         event: EventCreateInternal,
         publisher: "RabbitPublisher | None" = None,
+        background_tasks: "BackgroundTasks | None" = None,
     ):
         db_event = await self.repository.create(event)
         logger.info("event created")
 
         if publisher:
-            logger.info("publishing event")
-            try:
-                child = (
-                    await self.db.execute(
-                        select(Child).where(Child.id == db_event.child_id)
-                    )
-                ).scalar_one_or_none()
-                if not child or not child.tg_chat_id:
-                    logger.warning(
-                        "Skipping publish: child %s has no tg_chat_id",
-                        db_event.child_id,
-                    )
-                    return db_event
-                event_types = await self.get_event_types(child.id)
-                formatter = TgMsgFormatter(event_types, child.timezone)
-                event_type = await self.event_type_repository.find(event.event_type_id)
-                if event_type.format == "range_end":
-                    start_event = await self.repository.get(
-                        limit=1,
-                        order_by="occurred_at",
-                        order_dir="desc",
-                        event_type_id=event_type.parent_id,
-                    )
+            await self._publish_event_created(db_event, publisher)
 
-                    message_text = formatter.format(
-                        start_event[0].__dict__,
-                        db_event.__dict__,
-                    )
-
-                    logger.info("message_text: " + message_text)
-                    await publisher.publish_event_updated(
-                        db_event.id,
-                        child.tg_chat_id,
-                        message_text,
-                        start_event[0].tg_message_id,
-                    )
-                else:
-                    message_text = formatter.format(db_event.__dict__)
-                    logger.info("message_text: " + message_text)
-                    await publisher.publish_event_created(
-                        db_event.id, child.tg_chat_id, message_text
-                    )
-            except Exception:
-                logger.exception(
-                    "Failed to publish RabbitMQ message for event_id=%s", db_event.id
-                )
+        if background_tasks:
+            background_tasks.add_task(
+                UpdateAnalytics(self.db).update, db_event.child_id, db_event.occurred_at
+            )
 
         return db_event
+
+    async def _publish_event_created(self, db_event, publisher: "RabbitPublisher"):
+        try:
+            child = (
+                await self.db.execute(
+                    select(Child).where(Child.id == db_event.child_id)
+                )
+            ).scalar_one_or_none()
+
+            if not child or not child.tg_chat_id:
+                logger.warning(
+                    "Skipping publish: child %s has no tg_chat_id", db_event.child_id
+                )
+                return
+
+            event_types = await self.get_event_types(child.id)
+            formatter = TgMsgFormatter(event_types, child.timezone)
+            event_type = await self.event_type_repository.find(db_event.event_type_id)
+
+            if event_type.format == "range_end":
+                start_event = await self.repository.get(
+                    limit=1,
+                    order_by="occurred_at",
+                    order_dir="desc",
+                    event_type_id=event_type.parent_id,
+                )
+                message_text = formatter.format(
+                    start_event[0].__dict__, db_event.__dict__
+                )
+                logger.info("message_text: " + message_text)
+                await publisher.publish_event_updated(
+                    db_event.id,
+                    child.tg_chat_id,
+                    message_text,
+                    start_event[0].tg_message_id,
+                )
+            else:
+                message_text = formatter.format(db_event.__dict__)
+                logger.info("message_text: " + message_text)
+                await publisher.publish_event_created(
+                    db_event.id, child.tg_chat_id, message_text
+                )
+
+        except Exception:
+            logger.exception(
+                "Failed to publish RabbitMQ message for event_id=%s", db_event.id
+            )
 
     async def set_tg_msg_id(self, record_id: int, tg_msg_id: int) -> Optional[Event]:
         return await self.repository.update(record_id, tg_message_id=tg_msg_id)

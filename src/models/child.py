@@ -8,6 +8,7 @@ from src.models.base import Base
 if TYPE_CHECKING:
     from src.models.user import User
     from src.models import Event, APIKey
+    from src.models.daily_analytics import DailyAnalytics
 
 # Association table: Child <-> User with extra "is_owner" flag
 child_users = Table(
@@ -41,4 +42,8 @@ class Child(Base):
         "APIKey",
         back_populates="child",
         cascade="all, delete-orphan",
+    )
+    daily_analytics: Mapped[list["DailyAnalytics"]] = relationship(
+        "DailyAnalytics",
+        back_populates="child",
     )

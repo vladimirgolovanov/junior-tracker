@@ -4,6 +4,7 @@ from .event import Event
 from .user import User
 from .event_type import EventType
 from .api_key import APIKey
+from .daily_analytics import DailyAnalytics
 
 __all__ = [
     "AccessToken",
@@ -12,4 +13,5 @@ __all__ = [
     "User",
     "EventType",
     "APIKey",
+    "DailyAnalytics",
 ]
