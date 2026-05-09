@@ -50,6 +50,15 @@ async def chart(  # todo: validation dates + event_type_ids
     }
 
 
+@router.get("/status")
+async def child_status(
+    child_id: Annotated[int, Query()],
+    service: Chart = Depends(),
+    user: User = Depends(current_active_user),
+):
+    return await service.get_child_status(user, child_id)
+
+
 @router.get("/sleep")
 async def sleep_events(
     child_id: Annotated[int, Query()],

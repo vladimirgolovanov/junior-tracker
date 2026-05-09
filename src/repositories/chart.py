@@ -68,6 +68,36 @@ class ChartRepository:
 
         return [dict(row) for row in results.mappings().all()]
 
+    async def get_sleep_status(self, child_id: int):
+        query = text("""
+                     SELECT e.occurred_at, et.name AS event_type_name
+                     FROM events e
+                     JOIN event_types et ON e.event_type_id = et.id
+                     WHERE e.child_id = :child_id
+                       AND et.name IN ('sleep_start', 'sleep_end')
+                     ORDER BY e.occurred_at DESC
+                     LIMIT 1
+                     """)
+        return (await self.db.execute(query, {"child_id": child_id})).mappings().first()
+
+    async def get_last_events_per_type(self, child_id: int):
+        query = text("""
+                     SELECT DISTINCT ON (e.event_type_id)
+                         e.event_type_id,
+                         et.name AS event_type_name,
+                         et.format,
+                         e.occurred_at,
+                         e.volume,
+                         e.description
+                     FROM events e
+                     JOIN event_types et ON e.event_type_id = et.id
+                     WHERE e.child_id = :child_id
+                       AND et.name NOT IN ('sleep_start', 'sleep_end')
+                     ORDER BY e.event_type_id, e.occurred_at DESC
+                     """)
+        results = await self.db.execute(query, {"child_id": child_id})
+        return [dict(row) for row in results.mappings().all()]
+
     async def get_plain_events(self):
         pass
 

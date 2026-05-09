@@ -64,3 +64,28 @@ class Chart:
             raise HTTPException(status_code=403, detail="Access denied")
 
         return await self.chart_repository.get_sleep_events(child_id, date_from, date_to)
+
+    async def get_child_status(self, user: User, child_id: int):
+        child = await self.child_repository.find(
+            child_id, options=[selectinload(Child.users)]
+        )
+
+        if child is None:
+            raise HTTPException(status_code=404, detail="Child not found")
+
+        if not any(u.id == user.id for u in child.users):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        sleep_row = await self.chart_repository.get_sleep_status(child_id)
+        if sleep_row:
+            is_sleeping = sleep_row["event_type_name"] == "sleep_start"
+            sleep_status = {
+                "sleeping": is_sleeping,
+                "at": sleep_row["occurred_at"],
+            }
+        else:
+            sleep_status = None
+
+        other_events = await self.chart_repository.get_last_events_per_type(child_id)
+
+        return {"sleep": sleep_status, "last_events": other_events}
