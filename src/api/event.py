@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
@@ -17,9 +18,16 @@ CurrentUser = Annotated[User, Depends(current_active_user)]
 async def events(
     child_id: Annotated[int, Query()],
     user: CurrentUser,
+    date_from: Annotated[datetime | None, Query()] = None,
+    date_to: Annotated[datetime | None, Query()] = None,
     service: EventService = Depends(),
 ):
-    return await service.get(user, child_id)
+    return await service.get(
+        user,
+        child_id,
+        occurred_at__gte=date_from,
+        occurred_at__lte=date_to,
+    )
 
 
 @router.post("/")
