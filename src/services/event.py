@@ -43,10 +43,11 @@ class EventService:
 
         if publisher:
             await self._publish_event_created(db_event, publisher)
+            await self._publish_range_event_if_applicable(db_event, publisher)
 
         if background_tasks:
             background_tasks.add_task(
-                UpdateAnalytics(self.db).update, db_event.child_id, db_event.occurred_at
+                UpdateAnalytics().update, db_event.child_id, db_event.occurred_at
             )
 
         return db_event
@@ -132,17 +133,18 @@ class EventService:
 
         if background_tasks:
             background_tasks.add_task(
-                UpdateAnalytics(self.db).update, existing.child_id, existing.occurred_at
+                UpdateAnalytics().update, existing.child_id, existing.occurred_at
             )
             if updated.occurred_at != existing.occurred_at:
                 background_tasks.add_task(
-                    UpdateAnalytics(self.db).update,
+                    UpdateAnalytics().update,
                     existing.child_id,
                     updated.occurred_at,
                 )
 
         if publisher:
             await self._publish_event_updated(updated, publisher)
+            await self._publish_range_event_if_applicable(updated, publisher)
 
         return updated
 
@@ -164,12 +166,13 @@ class EventService:
         if deleted:
             if background_tasks:
                 background_tasks.add_task(
-                    UpdateAnalytics(self.db).update,
+                    UpdateAnalytics().update,
                     existing.child_id,
                     existing.occurred_at,
                 )
             if publisher:
                 await self._publish_event_deleted(existing, publisher)
+                await self._publish_range_event_if_applicable(existing, publisher)
 
         return deleted
 
@@ -239,6 +242,20 @@ class EventService:
         except Exception:
             logger.exception(
                 "Failed to publish event_deleted for event_id=%s", db_event.id
+            )
+
+    async def _publish_range_event_if_applicable(
+        self, db_event: Event, publisher: "RabbitPublisher"
+    ) -> None:
+        try:
+            event_type = await self.event_type_repository.find(db_event.event_type_id)
+            if event_type and event_type.format in ("range", "range_end"):
+                await publisher.publish_range_event(
+                    event_type.format, db_event.child_id, db_event.occurred_at
+                )
+        except Exception:
+            logger.exception(
+                "Failed to publish range_event for event_id=%s", db_event.id
             )
 
     async def get_event_types(self, child_id: int):

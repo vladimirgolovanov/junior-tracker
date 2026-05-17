@@ -101,6 +101,33 @@ class RabbitPublisher:
             await channel.close()
 
 
+    async def publish_range_event(
+        self, event_type_format: str, child_id: int, occurred_at: datetime
+    ) -> None:
+        if not settings.rabbitmq_range_events_queue:
+            return
+        payload = {
+            "event_type": event_type_format,
+            "child_id": child_id,
+            "occurred_at": occurred_at.isoformat(),
+        }
+        channel = await self._connection.channel()
+        try:
+            await channel.declare_queue(settings.rabbitmq_range_events_queue, durable=True)
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(payload).encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                ),
+                routing_key=settings.rabbitmq_range_events_queue,
+            )
+            logger.info(
+                "Published range_event child_id=%s format=%s", child_id, event_type_format
+            )
+        finally:
+            await channel.close()
+
+
 async def get_publisher(request: Request) -> "RabbitPublisher | None":
     connection = request.app.state.rabbit_connection
     if connection is None:

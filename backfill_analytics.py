@@ -35,13 +35,17 @@ async def backfill(db: AsyncSession):
         ).all()
 
         days = [row.day for row in rows]
-        logger.info("Child %d (%s): %d days to backfill", child.id, child.name, len(days))
+        logger.info(
+            "Child %d (%s): %d days to backfill", child.id, child.name, len(days)
+        )
 
-        service = UpdateAnalytics(db)
+        service = UpdateAnalytics()
         child_tz = ZoneInfo(child.timezone)
         for day in days:
             # midnight in child's local timezone — astimezone(child_tz).date() == day
-            occurred_at = datetime.datetime(day.year, day.month, day.day, tzinfo=child_tz)
+            occurred_at = datetime.datetime(
+                day.year, day.month, day.day, tzinfo=child_tz
+            )
             try:
                 await service.update(child.id, occurred_at)
                 logger.info("  child %d, day %s — done", child.id, day)

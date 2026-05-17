@@ -5,6 +5,7 @@ from .user import User
 from .event_type import EventType
 from .api_key import APIKey
 from .daily_analytics import DailyAnalytics
+from .sleep_predict import SleepPredict
 
 __all__ = [
     "AccessToken",
@@ -14,4 +15,5 @@ __all__ = [
     "EventType",
     "APIKey",
     "DailyAnalytics",
+    "SleepPredict",
 ]
