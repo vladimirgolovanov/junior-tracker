@@ -1,3 +1,6 @@
+from typing import Optional
+
+from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +19,7 @@ class Settings(BaseSettings):
     rabbitmq_range_events_queue: str = ""
     sentry_dsn: str = ""
     token_lifetime_seconds: int = 60 * 60 * 24 * 14
+    predict_url: Optional[AnyHttpUrl] = None
 
 
 settings = Settings()

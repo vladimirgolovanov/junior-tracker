@@ -12,6 +12,7 @@ from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.schemas.event import EventCreateInternal, EventUpdate
 from src.services.child_access import ChildAccessGuard
+from src.services.predictor import Predictor
 from src.services.tg_msg_formatter import TgMsgFormatter
 from src.services.update_analytics import UpdateAnalytics
 
@@ -48,6 +49,12 @@ class EventService:
         if background_tasks:
             background_tasks.add_task(
                 UpdateAnalytics().update, db_event.child_id, db_event.occurred_at
+            )
+            background_tasks.add_task(
+                Predictor().predict,
+                db_event.child_id,
+                db_event.event_type_id,
+                db_event.occurred_at,
             )
 
         return db_event

@@ -16,6 +16,7 @@ _OPERATORS = {
     "lte": lambda col, v: col <= v,
     "gt": lambda col, v: col > v,
     "lt": lambda col, v: col < v,
+    "in": lambda col, v: col.in_(v),
 }
 
 
