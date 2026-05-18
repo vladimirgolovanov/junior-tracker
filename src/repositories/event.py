@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src import get_db
 from src.models import Event
+from src.models.event_type import EventType
 from src.repositories.base import BaseRepository, ModelType
 
 
@@ -54,3 +55,16 @@ class EventRepository(BaseRepository[Event]):
         await self.db.flush()
         await self.db.refresh(db_obj)
         return db_obj
+
+    async def get_last_range_event(self, child_id: int) -> Event | None:
+        result = await self.db.execute(
+            select(Event)
+            .join(EventType, Event.event_type_id == EventType.id)
+            .where(
+                Event.child_id == child_id,
+                EventType.format.in_(["range", "range_end"]),
+            )
+            .order_by(Event.occurred_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()

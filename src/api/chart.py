@@ -8,6 +8,7 @@ from src.models import User
 from src.services.chart import Chart
 from src.services.dashboard import Dashboard
 from src.services.event import EventService
+from src.services.sleep_predict import SleepPredictService
 
 router = APIRouter()
 
@@ -71,6 +72,16 @@ async def sleep_events(
         raise HTTPException(status_code=422, detail="date_from must be before date_to")
 
     return await service.get_sleep_events(user, child_id, date_from, date_to)
+
+
+@router.get("/sleep-predict")
+async def sleep_predict(
+    child_id: Annotated[int, Query()],
+    user: User = Depends(current_active_user),
+    service: SleepPredictService = Depends(),
+):
+    predictions = await service.get_predictions(child_id, user)
+    return {"predictions": predictions}
 
 
 @router.get("/dashboard")

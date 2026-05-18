@@ -5,6 +5,7 @@ import aiohttp
 from sqlalchemy import insert
 
 from src.config import settings
+from src.constants.sleep import DAY_END
 from src.db_helper import async_session_maker, get_db
 from src.models import SleepPredict
 from src.repositories.event import EventRepository
@@ -82,21 +83,57 @@ class Predictor:
 
 def _events_to_segments(events: list[Event], event_type_ids: tuple) -> list[dict]:
     start_type, end_type = event_type_ids
-    starts = {e.child_id: e for e in events if e.event_type_id == start_type}
-    ends = {e.child_id: e for e in events if e.event_type_id == end_type}
 
-    result = []
-    for child_id, end in ends.items():
-        start = starts.get(child_id)
-        if not start:
-            continue
-        result.append(
-            {
-                "time": int((end.occurred_at - start.occurred_at).total_seconds() / 60),
-                "start_dt": start.occurred_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "end_dt": end.occurred_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "segment_type": "day_awake",
-            }
-        )
+    if len(events) < 2:
+        return []
 
-    return result
+    events = sorted(events, key=lambda e: e.occurred_at)
+    day_end_dt = datetime.combine(events[0].occurred_at.date(), DAY_END)
+
+    def seg_type(is_sleep: bool, end_dt: datetime) -> str:
+        prefix = "day" if end_dt < day_end_dt else "night"
+        suffix = "sleep" if is_sleep else "awake"
+        return f"{prefix}_{suffix}"
+
+    def fmt(dt: datetime) -> str:
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    if events[0].event_type_id == end_type:
+        wake_up = events[0].occurred_at
+        asleep = events[1].occurred_at
+    else:
+        wake_up = events[1].occurred_at
+        asleep = events[0].occurred_at
+
+    segments = [
+        {
+            "time": int((events[1].occurred_at - events[0].occurred_at).total_seconds() / 60),
+            "start_dt": fmt(events[0].occurred_at),
+            "end_dt": fmt(events[1].occurred_at),
+            "segment_type": seg_type(events[0].event_type_id == start_type, events[1].occurred_at),
+        }
+    ]
+
+    for event in events[2:]:
+        if event.event_type_id == start_type:
+            segments.append(
+                {
+                    "time": int((event.occurred_at - wake_up).total_seconds() / 60),
+                    "start_dt": fmt(wake_up),
+                    "end_dt": fmt(event.occurred_at),
+                    "segment_type": seg_type(False, event.occurred_at),
+                }
+            )
+            asleep = event.occurred_at
+        elif event.event_type_id == end_type:
+            wake_up = event.occurred_at
+            segments.append(
+                {
+                    "time": int((wake_up - asleep).total_seconds() / 60),
+                    "start_dt": fmt(asleep),
+                    "end_dt": fmt(wake_up),
+                    "segment_type": seg_type(True, wake_up),
+                }
+            )
+
+    return segments
