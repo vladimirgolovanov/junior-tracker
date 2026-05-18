@@ -40,6 +40,18 @@ class UpdateAnalytics:
                 serialized = json.loads(json.dumps(analytics_data, default=str))
 
                 await daily_analytics_repository.upsert(child.id, day, serialized)
+
+                yesterday = day - datetime.timedelta(days=1)
+                rows = await chart_repository.get_cycle_day_events(
+                    child, yesterday, event_type_ids
+                )
+                rows = CycleDayEventsIsolator().isolate(rows, yesterday, event_type_ids)
+
+                analytics_data = CycleDaySleepData().build(rows, event_type_ids)
+                serialized = json.loads(json.dumps(analytics_data, default=str))
+
+                await daily_analytics_repository.upsert(child.id, yesterday, serialized)
+
                 await db.commit()
             except Exception:
                 await db.rollback()
