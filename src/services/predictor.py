@@ -37,25 +37,25 @@ class Predictor:
             }
             logger.info("Sending predict request: %s", payload)
 
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        str(settings.predict_url), json=payload
-                    ) as response:
-                        result = await response.json()
-                        logger.info(
-                            "Predict response [%s]: %s", response.status, result
-                        )
-                        await db.execute(
-                            insert(SleepPredict).values(
-                                child_id=child_id,
-                                occurred_at=occurred_at,
-                                data=result,
-                            )
-                        )
-                        await db.commit()
-            except aiohttp.ClientError as e:
-                logger.error("Predict request failed: %s", e)
+            # try:
+            #     async with aiohttp.ClientSession() as session:
+            #         async with session.post(
+            #             str(settings.predict_url), json=payload
+            #         ) as response:
+            #             result = await response.json()
+            #             logger.info(
+            #                 "Predict response [%s]: %s", response.status, result
+            #             )
+            #             await db.execute(
+            #                 insert(SleepPredict).values(
+            #                     child_id=child_id,
+            #                     occurred_at=occurred_at,
+            #                     data=result,
+            #                 )
+            #             )
+            #             await db.commit()
+            # except aiohttp.ClientError as e:
+            #     logger.error("Predict request failed: %s", e)
 
     async def get_current_day(self, child_id: int, occurred_at: datetime, db):
         event_type_ids = await self.event_type_repository.get_sleep_event_types(
