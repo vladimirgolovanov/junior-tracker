@@ -8,10 +8,10 @@ from src.config import settings
 
 engine = create_async_engine(
     settings.db_url,
-    echo=True,  # settings.db_echo,
-    echo_pool=True,  # settings.db_echo,
+    echo=settings.db_echo,
+    echo_pool=settings.db_echo,
     pool_size=10,
-    max_overflow=2,
+    max_overflow=20,
     pool_timeout=30,
     pool_recycle=1800,
     pool_pre_ping=True,
