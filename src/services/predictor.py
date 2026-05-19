@@ -30,6 +30,12 @@ class Predictor:
             self.event_type_repository = EventTypeRepository(db)
             self.event_repository = EventRepository(db)
 
+            event_type_ids = await self.event_type_repository.get_sleep_event_types(
+                child_id
+            )
+            if event_type_id not in event_type_ids:
+                return
+
             current_day_events = await self.get_current_day(child_id, occurred_at, db)
             payload = {
                 "start_dt": occurred_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -88,7 +94,9 @@ def _events_to_segments(events: list[Event], event_type_ids: tuple) -> list[dict
         return []
 
     events = sorted(events, key=lambda e: e.occurred_at)
-    day_end_dt = datetime.combine(events[0].occurred_at.date(), DAY_END)
+    day_end_dt = datetime.combine(
+        events[0].occurred_at.date(), DAY_END, tzinfo=events[0].occurred_at.tzinfo
+    )
 
     def seg_type(is_sleep: bool, end_dt: datetime) -> str:
         prefix = "day" if end_dt < day_end_dt else "night"
