@@ -205,11 +205,16 @@ class EventService:
             #       find end event
             #       format message by end event
             if event_type.format == "range_end":
+                filters = {
+                    "child_id": child.id,
+                    "event_type_id": event_type.parent_id,
+                    "tg_message_id": db_event.tg_message_id,
+                }
                 start_event = await self.repository.get(
                     limit=1,
                     order_by="occurred_at",
                     order_dir="desc",
-                    event_type_id=event_type.parent_id,
+                    **filters,
                 )
                 if not start_event:
                     return
