@@ -21,7 +21,12 @@ SECRET = "SECRET"
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -74,8 +79,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
                         parent_id=event_type.id,
                     )
                 )
-
-        await session.commit()
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
