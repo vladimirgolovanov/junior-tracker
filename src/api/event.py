@@ -1,7 +1,7 @@
 from datetime import datetime, time
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 
 from src.auth.users import current_active_user
 from src.models import User
@@ -38,18 +38,11 @@ async def events(
 async def update_event(
     event_id: int,
     data: EventUpdate,
-    background_tasks: BackgroundTasks,
     user: CurrentUser,
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
-    event = await service.update(
-        event_id,
-        data,
-        user=user,
-        publisher=publisher,
-        background_tasks=background_tasks,
-    )
+    event = await service.update(event_id, data, user=user, publisher=publisher)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
@@ -58,14 +51,11 @@ async def update_event(
 @router.delete("/{event_id}", status_code=204)
 async def delete_event(
     event_id: int,
-    background_tasks: BackgroundTasks,
     user: CurrentUser,
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
-    deleted = await service.delete(
-        event_id, user=user, publisher=publisher, background_tasks=background_tasks
-    )
+    deleted = await service.delete(event_id, user=user, publisher=publisher)
     if not deleted:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -73,11 +63,8 @@ async def delete_event(
 @router.post("/")
 async def create_event(
     event: EventCreate,
-    background_tasks: BackgroundTasks,
     service: EventService = Depends(),
     publisher: RabbitPublisher | None = Depends(get_publisher),
 ):
     event_internal = EventCreateInternal(**event.model_dump())
-    return await service.create(
-        event_internal, publisher=publisher, background_tasks=background_tasks
-    )
+    return await service.create(event_internal, publisher=publisher)

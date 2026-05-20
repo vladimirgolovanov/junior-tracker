@@ -78,7 +78,6 @@ class Dashboard:
             child, today_date, event_type_ids
         )
         today_rows = isolator.isolate(today_rows, today_date, event_type_ids)
-        logging.info(today_rows)
 
         return {
             "today": builder.build(

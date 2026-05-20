@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, TYPE_CHECKING
 
-from fastapi import Depends, BackgroundTasks
+from fastapi import Depends
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,9 +12,7 @@ from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.schemas.event import EventCreateInternal, EventUpdate
 from src.services.child_access import ChildAccessGuard
-from src.services.predictor import Predictor
 from src.services.tg_msg_formatter import TgMsgFormatter
-from src.services.update_analytics import UpdateAnalytics
 
 if TYPE_CHECKING:
     from src.services.rabbit_publisher import RabbitPublisher
@@ -37,7 +35,6 @@ class EventService:
         self,
         event: EventCreateInternal,
         publisher: "RabbitPublisher | None" = None,
-        background_tasks: "BackgroundTasks | None" = None,
     ):
         db_event = await self.repository.create(event)
         logger.info("event created")
@@ -45,16 +42,9 @@ class EventService:
         if publisher:
             await self._publish_event_created(db_event, publisher)
             await self._publish_range_event_if_applicable(db_event, publisher)
-
-        if background_tasks:
-            background_tasks.add_task(
-                UpdateAnalytics().update, db_event.child_id, db_event.occurred_at
-            )
-            background_tasks.add_task(
-                Predictor().predict,
-                db_event.child_id,
-                db_event.event_type_id,
-                db_event.occurred_at,
+            await publisher.publish_analytics_update(db_event.child_id, db_event.occurred_at)
+            await publisher.publish_predict(
+                db_event.child_id, db_event.event_type_id, db_event.occurred_at
             )
 
         return db_event
@@ -126,7 +116,6 @@ class EventService:
         data: EventUpdate,
         user: "User | None" = None,
         publisher: "RabbitPublisher | None" = None,
-        background_tasks: "BackgroundTasks | None" = None,
     ) -> Optional[Event]:
         existing = await self.repository.find(event_id)
         if existing is None:
@@ -138,20 +127,12 @@ class EventService:
             event_id, **data.model_dump(exclude_unset=True)
         )
 
-        if background_tasks:
-            background_tasks.add_task(
-                UpdateAnalytics().update, existing.child_id, existing.occurred_at
-            )
-            if updated.occurred_at != existing.occurred_at:
-                background_tasks.add_task(
-                    UpdateAnalytics().update,
-                    existing.child_id,
-                    updated.occurred_at,
-                )
-
         if publisher:
             await self._publish_event_updated(updated, publisher)
             await self._publish_range_event_if_applicable(updated, publisher)
+            await publisher.publish_analytics_update(existing.child_id, existing.occurred_at)
+            if updated.occurred_at != existing.occurred_at:
+                await publisher.publish_analytics_update(existing.child_id, updated.occurred_at)
 
         return updated
 
@@ -160,7 +141,6 @@ class EventService:
         event_id: int,
         user: "User | None" = None,
         publisher: "RabbitPublisher | None" = None,
-        background_tasks: "BackgroundTasks | None" = None,
     ) -> bool:
         existing = await self.repository.find(event_id)
         if existing is None:
@@ -170,16 +150,10 @@ class EventService:
 
         deleted = await self.repository.delete(event_id)
 
-        if deleted:
-            if background_tasks:
-                background_tasks.add_task(
-                    UpdateAnalytics().update,
-                    existing.child_id,
-                    existing.occurred_at,
-                )
-            if publisher:
-                await self._publish_event_deleted(existing, publisher)
-                await self._publish_range_event_if_applicable(existing, publisher)
+        if deleted and publisher:
+            await self._publish_event_deleted(existing, publisher)
+            await self._publish_range_event_if_applicable(existing, publisher)
+            await publisher.publish_analytics_update(existing.child_id, existing.occurred_at)
 
         return deleted
 

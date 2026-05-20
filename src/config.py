@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     rabbitmq_tg_commands_queue: str = ""
     rabbitmq_tg_commands_responses_queue: str = ""
     rabbitmq_range_events_queue: str = ""
+    rabbitmq_analytics_queue: str = ""
     sentry_dsn: str = ""
     token_lifetime_seconds: int = 60 * 60 * 24 * 14
     predict_url: Optional[AnyHttpUrl] = None

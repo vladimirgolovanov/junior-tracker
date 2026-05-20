@@ -128,6 +128,54 @@ class RabbitPublisher:
             await channel.close()
 
 
+    async def publish_analytics_update(self, child_id: int, occurred_at: datetime) -> None:
+        if not settings.rabbitmq_analytics_queue:
+            return
+        payload = {
+            "task": "update_analytics",
+            "child_id": child_id,
+            "occurred_at": occurred_at.isoformat(),
+        }
+        channel = await self._connection.channel()
+        try:
+            await channel.declare_queue(settings.rabbitmq_analytics_queue, durable=True)
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(payload).encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                ),
+                routing_key=settings.rabbitmq_analytics_queue,
+            )
+            logger.info("Published analytics_update child_id=%s", child_id)
+        finally:
+            await channel.close()
+
+    async def publish_predict(
+        self, child_id: int, event_type_id: int, occurred_at: datetime
+    ) -> None:
+        if not settings.rabbitmq_analytics_queue:
+            return
+        payload = {
+            "task": "predict",
+            "child_id": child_id,
+            "event_type_id": event_type_id,
+            "occurred_at": occurred_at.isoformat(),
+        }
+        channel = await self._connection.channel()
+        try:
+            await channel.declare_queue(settings.rabbitmq_analytics_queue, durable=True)
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(payload).encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                ),
+                routing_key=settings.rabbitmq_analytics_queue,
+            )
+            logger.info("Published predict child_id=%s event_type_id=%s", child_id, event_type_id)
+        finally:
+            await channel.close()
+
+
 async def get_publisher(request: Request) -> "RabbitPublisher | None":
     connection = request.app.state.rabbit_connection
     if connection is None:

@@ -18,6 +18,7 @@ spec:
       containers:
         - name: api
           image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+          command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "50081"]
           envFrom:
             - secretRef:
                 name: junior-tracker-env
@@ -77,6 +78,37 @@ spec:
           livenessProbe:
             exec:
               command: ["python", "-c", "import sys, os; sys.exit(0)"]
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: junior-tracker-predict-worker
+  namespace: junior-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: junior-tracker-predict-worker
+  template:
+    metadata:
+      labels:
+        app: junior-tracker-predict-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: predict-worker
+          image: ghcr.io/vladimirgolovanov/junior-tracker:latest
+          command: ["python", "predict_worker.py"]
+          envFrom:
+            - secretRef:
+                name: junior-tracker-env
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
             initialDelaySeconds: 40
             periodSeconds: 30
             failureThreshold: 3
