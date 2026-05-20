@@ -13,8 +13,15 @@ engine = create_async_engine(
     pool_size=10,
     max_overflow=20,
     pool_timeout=30,
-    pool_recycle=1800,
+    pool_recycle=600,
     pool_pre_ping=True,
+    connect_args={
+        "server_settings": {
+            "tcp_keepalives_idle": "60",
+            "tcp_keepalives_interval": "10",
+            "tcp_keepalives_count": "5",
+        }
+    },
 )
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -32,12 +39,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def db_session(
-    session: AsyncSession = AsyncSession(),
-) -> AsyncGenerator[AsyncSession, None]:
-    try:
-        yield session
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
