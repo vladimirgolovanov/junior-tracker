@@ -15,10 +15,12 @@ class RabbitWorker:
         rabbit_url: str,
         queue_name: str,
         handler,
+        delay_seconds: float = 0,
     ):
         self.rabbit_url = rabbit_url
         self.queue_name = queue_name
         self._handler = handler
+        self.delay_seconds = delay_seconds
         self._connection = None
         self._channel = None
         self._queue = None
@@ -42,6 +44,8 @@ class RabbitWorker:
         async with message.process(requeue=False):
             body = json.loads(message.body.decode())
             logger.info("Received message: %s", body)
+            if self.delay_seconds:
+                await asyncio.sleep(self.delay_seconds)
             await self._handler(body)
 
     async def start(self):

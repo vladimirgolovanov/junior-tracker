@@ -32,6 +32,7 @@ async def main():
         settings.rabbit_url,
         settings.rabbitmq_analytics_queue,
         handler=handle_analytics_task,
+        delay_seconds=2,
     )
 
     loop = asyncio.get_running_loop()
