@@ -58,6 +58,7 @@ jobs:
           kubectl apply -f k8s/
 
       - name: Run migrations
+        if: false
         run: |
           kubectl delete job junior-tracker-migrate -n junior-tracker --ignore-not-found
           kubectl apply -f - <<'EOF'
