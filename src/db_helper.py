@@ -15,13 +15,6 @@ engine = create_async_engine(
     pool_timeout=30,
     pool_recycle=600,
     pool_pre_ping=True,
-    connect_args={
-        "server_settings": {
-            "tcp_keepalives_idle": "60",
-            "tcp_keepalives_interval": "10",
-            "tcp_keepalives_count": "5",
-        }
-    },
 )
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
