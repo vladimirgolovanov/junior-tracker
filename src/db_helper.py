@@ -15,7 +15,6 @@ engine = create_async_engine(
     pool_timeout=30,
     pool_recycle=600,
     pool_pre_ping=True,
-    connect_args={"server_settings": {"idle_in_transaction_session_timeout": "30000"}},
 )
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
