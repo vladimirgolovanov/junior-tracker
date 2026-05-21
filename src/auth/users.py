@@ -9,7 +9,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db_helper import async_session_maker
+from src.db_helper import get_db
 from src.default_event_types import DEFAULT_EVENT_TYPES
 from src.models import User
 from src.models.access_token import AccessToken
@@ -19,14 +19,7 @@ from src.models.event_type import EventType
 SECRET = "SECRET"
 
 
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+get_async_session = get_db
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):

@@ -6,7 +6,7 @@ from sqlalchemy import insert
 
 from src.config import settings
 from src.constants.sleep import DAY_END
-from src.db_helper import async_session_maker, get_db
+from src.db_helper import async_session_maker
 from src.models import SleepPredict
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
@@ -37,32 +37,36 @@ class Predictor:
                 return
 
             current_day_events = await self.get_current_day(child_id, occurred_at, db)
-            payload = {
-                "start_dt": occurred_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "n_segments": self.PREDICT_LIMIT,
-                "current_day": current_day_events,
-            }
-            logger.info("Sending predict request: %s", payload)
 
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        str(settings.predict_url), json=payload
-                    ) as response:
-                        result = await response.json()
-                        logger.info(
-                            "Predict response [%s]: %s", response.status, result
-                        )
-                        await db.execute(
-                            insert(SleepPredict).values(
-                                child_id=child_id,
-                                occurred_at=occurred_at,
-                                data=result,
-                            )
-                        )
-                        await db.commit()
-            except (aiohttp.ClientError, OSError) as e:
-                logger.error("Predict request failed: %s", e)
+        payload = {
+            "start_dt": occurred_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "n_segments": self.PREDICT_LIMIT,
+            "current_day": current_day_events,
+        }
+        logger.info("Sending predict request: %s", payload)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    str(settings.predict_url), json=payload
+                ) as response:
+                    result = await response.json()
+                    logger.info(
+                        "Predict response [%s]: %s", response.status, result
+                    )
+        except (aiohttp.ClientError, OSError) as e:
+            logger.error("Predict request failed: %s", e)
+            return
+
+        async with async_session_maker() as db:
+            await db.execute(
+                insert(SleepPredict).values(
+                    child_id=child_id,
+                    occurred_at=occurred_at,
+                    data=result,
+                )
+            )
+            await db.commit()
 
     async def get_current_day(self, child_id: int, occurred_at: datetime, db):
         event_type_ids = await self.event_type_repository.get_sleep_event_types(

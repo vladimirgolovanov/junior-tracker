@@ -8,7 +8,7 @@ from src.rabbit_worker import RabbitWorker
 from src.services.child import ChildService
 from src.services.event import EventService
 from src.services.tg_msg_parser import TgMsgParser
-from src.db_helper import db_session, get_db
+from src.db_helper import db_session
 
 
 logging.basicConfig(
@@ -22,7 +22,7 @@ logger = logging.getLogger("worker")
 async def parse_msg(
     body: dict,
 ):
-    async for db in get_db():  # async with get_db() as db:
+    async with db_session() as db:
         child_service = ChildService(db)
         event_service = EventService(db)
         child = await child_service.get_by_chat_id(str(body["chat_id"]))
@@ -45,7 +45,7 @@ async def parse_msg(
 
 async def handle_tg_commands_responses(body: dict):
     logger.info("Received tg commands response: %s", body)
-    async for db in get_db():
+    async with db_session() as db:
         event_service = EventService(db)
         await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
 
