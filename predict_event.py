@@ -3,7 +3,7 @@ import asyncio
 import logging
 import sys
 
-from src.db_helper import get_db
+from src.db_helper import db_session
 from src.repositories.event import EventRepository
 from src.services.predictor import Predictor
 
@@ -15,7 +15,7 @@ logger = logging.getLogger("predict_event")
 
 
 async def run(event_id: int):
-    async for db in get_db():
+    async with db_session() as db:
         event_repo = EventRepository(db)
         event = await event_repo.find(event_id)
         if event is None:
@@ -29,8 +29,9 @@ async def run(event_id: int):
             event.event_type_id,
             event.occurred_at,
         )
-        await Predictor().predict(event.child_id, event.event_type_id, event.occurred_at)
-        logger.info("Done")
+
+    await Predictor().predict(event.child_id, event.event_type_id, event.occurred_at)
+    logger.info("Done")
 
 
 def main():
