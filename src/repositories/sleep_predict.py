@@ -17,9 +17,12 @@ class SleepPredictRepository(BaseRepository[SleepPredict]):
         self, child_id: int, occurred_at: datetime
     ) -> SleepPredict | None:
         result = await self.db.execute(
-            select(SleepPredict).where(
+            select(SleepPredict)
+            .where(
                 SleepPredict.child_id == child_id,
                 SleepPredict.occurred_at == occurred_at,
             )
+            .order_by(SleepPredict.id.desc())
+            .limit(1)
         )
-        return result.scalar_one_or_none()
+        return result.scalars().first()
