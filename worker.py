@@ -49,7 +49,11 @@ async def handle_tg_commands_responses(body: dict):
     try:
         async with db_session() as db:
             event_service = EventService(db)
-            await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
+            result = await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
+            if result is None:
+                logger.warning("set_tg_msg_id: event id=%s not found", body.get("id"))
+            else:
+                logger.info("set_tg_msg_id: updated event id=%s tg_message_id=%s", result.id, result.tg_message_id)
     except Exception as e:
         logger.exception("Error handling tg commands response: %s", e)
         sentry_sdk.capture_exception(e)
