@@ -3,13 +3,14 @@ from datetime import datetime
 import logging
 import signal
 
+import sentry_sdk
+
 from src.config import settings
 from src.rabbit_worker import RabbitWorker
 from src.services.child import ChildService
 from src.services.event import EventService
 from src.services.tg_msg_parser import TgMsgParser
 from src.db_helper import db_session
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,9 +46,14 @@ async def parse_msg(
 
 async def handle_tg_commands_responses(body: dict):
     logger.info("Received tg commands response: %s", body)
-    async with db_session() as db:
-        event_service = EventService(db)
-        await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
+    try:
+        async with db_session() as db:
+            event_service = EventService(db)
+            await event_service.set_tg_msg_id(body.get("id"), body.get("tg_message_id"))
+    except Exception as e:
+        logger.exception("Error handling tg commands response: %s", e)
+        sentry_sdk.capture_exception(e)
+        raise
 
 
 async def main():
