@@ -40,6 +40,7 @@ class EventService:
         logger.info("event created")
 
         if publisher:
+            await self.db.commit()
             await self._publish_event_created(db_event, publisher)
             await self._publish_range_event_if_applicable(db_event, publisher)
             await publisher.publish_analytics_update(db_event.child_id, db_event.occurred_at)
