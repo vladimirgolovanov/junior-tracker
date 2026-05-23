@@ -34,10 +34,21 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
+    async def create(self, user_create, safe: bool = False, request: Optional[Request] = None):
+        self._reg_child_name = getattr(user_create, "child_name", None) or "My Child"
+        self._reg_timezone = getattr(user_create, "timezone", None)
+        self._reg_date_of_birth = getattr(user_create, "date_of_birth", None)
+        self._reg_event_types = getattr(user_create, "event_types", None)
+        return await super().create(user_create, safe, request)
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         session: AsyncSession = self.user_db.session
 
-        child = Child(name="My Child")
+        child = Child(
+            name=getattr(self, "_reg_child_name", "My Child"),
+            timezone=getattr(self, "_reg_timezone", None),
+            date_of_birth=getattr(self, "_reg_date_of_birth", None),
+        )
         session.add(child)
         await session.flush()
 
@@ -49,29 +60,56 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
             )
         )
 
-        for template in DEFAULT_EVENT_TYPES:
-            event_type = EventType(
-                name=template["name"],
-                keywords=template.get("keywords"),
-                format=template["format"],
-                color=template.get("color"),
-                child_id=child.id,
-            )
-            session.add(event_type)
+        custom_event_types = getattr(self, "_reg_event_types", None)
 
-            if template["format"] == "range" and template.get("range_end"):
-                await session.flush()
-                end = template["range_end"]
-                session.add(
-                    EventType(
-                        name=end["name"],
-                        keywords=end.get("keywords"),
-                        format="range_end",
-                        color=end.get("color"),
-                        child_id=child.id,
-                        parent_id=event_type.id,
-                    )
+        if custom_event_types is None:
+            for template in DEFAULT_EVENT_TYPES:
+                event_type = EventType(
+                    name=template["name"],
+                    keywords=template.get("keywords"),
+                    format=template["format"],
+                    color=template.get("color"),
+                    child_id=child.id,
                 )
+                session.add(event_type)
+
+                if template["format"] == "range" and template.get("range_end"):
+                    await session.flush()
+                    end = template["range_end"]
+                    session.add(
+                        EventType(
+                            name=end["name"],
+                            keywords=end.get("keywords"),
+                            format="range_end",
+                            color=end.get("color"),
+                            child_id=child.id,
+                            parent_id=event_type.id,
+                        )
+                    )
+        else:
+            for et in custom_event_types:
+                event_type = EventType(
+                    name=et.name,
+                    keywords=et.keywords,
+                    format=et.format,
+                    color=et.color,
+                    child_id=child.id,
+                )
+                session.add(event_type)
+
+                if et.format == "range" and et.range_end:
+                    await session.flush()
+                    re = et.range_end
+                    session.add(
+                        EventType(
+                            name=re.name,
+                            keywords=re.keywords,
+                            format="range_end",
+                            color=re.color,
+                            child_id=child.id,
+                            parent_id=event_type.id,
+                        )
+                    )
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):

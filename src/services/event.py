@@ -44,9 +44,13 @@ class EventService:
             await self._publish_event_created(db_event, publisher)
             await self._publish_range_event_if_applicable(db_event, publisher)
             await publisher.publish_analytics_update(db_event.child_id, db_event.occurred_at)
-            await publisher.publish_predict(
-                db_event.child_id, db_event.event_type_id, db_event.occurred_at
-            )
+            child = (
+                await self.db.execute(select(Child).where(Child.id == db_event.child_id))
+            ).scalar_one_or_none()
+            if child and child.predict_enabled:
+                await publisher.publish_predict(
+                    db_event.child_id, db_event.event_type_id, db_event.occurred_at
+                )
 
         return db_event
 
