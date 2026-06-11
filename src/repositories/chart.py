@@ -98,6 +98,37 @@ class ChartRepository:
         results = await self.db.execute(query, {"child_id": child_id})
         return [dict(row) for row in results.mappings().all()]
 
+    async def get_formula_daily(
+        self,
+        child: Child,
+        date_from: date,
+        date_to: date,
+    ) -> list[dict]:
+        query = text("""
+            SELECT
+                (e.occurred_at AT TIME ZONE :timezone)::date AS day,
+                COALESCE(SUM(e.volume), 0)                   AS total_volume,
+                COUNT(*)                                     AS count
+            FROM events e
+            JOIN event_types et ON e.event_type_id = et.id
+            WHERE et.name = 'formula'
+              AND et.child_id = :child_id
+              AND e.child_id = :child_id
+              AND (e.occurred_at AT TIME ZONE :timezone)::date BETWEEN :date_from AND :date_to
+            GROUP BY day
+            ORDER BY day
+        """)
+        results = await self.db.execute(
+            query,
+            {
+                "timezone": child.timezone,
+                "child_id": child.id,
+                "date_from": date_from,
+                "date_to": date_to,
+            },
+        )
+        return [dict(row) for row in results.mappings().all()]
+
     async def get_plain_events(self):
         pass
 
