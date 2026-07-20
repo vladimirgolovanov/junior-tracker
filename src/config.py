@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     token_lifetime_seconds: int = 60 * 60 * 24 * 14
     predict_url: Optional[AnyHttpUrl] = None
+    backend_v2_url: Optional[AnyHttpUrl] = None
 
 
 settings = Settings()

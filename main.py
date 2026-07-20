@@ -20,7 +20,7 @@ from src.mcp.tools import mcp
 if settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
-        traces_sample_rate=1.0,
+        traces_sample_rate=0,
     )
 
 

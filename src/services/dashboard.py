@@ -2,8 +2,10 @@ import logging
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 
+import aiohttp
 from fastapi import Depends
 
+from src.config import settings
 from src.domain.services.cycle_day_events_isolator import CycleDayEventsIsolator
 from src.domain.services.cycle_day_sleep_data import CycleDaySleepData
 from src.models import User
@@ -11,6 +13,8 @@ from src.repositories.chart import ChartRepository
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.services.child_access import ChildAccessGuard
+
+logger = logging.getLogger(__name__)
 
 
 class Dashboard:
@@ -33,6 +37,28 @@ class Dashboard:
         today: date = None,
         current_time: datetime = None,
     ):
+        if not settings.backend_v2_url:
+            return
+
+        if today is None:
+            today = date.today()
+
+        from_date = today - timedelta(days=2)
+        params = {
+            "from": from_date.strftime("%Y-%m-%d"),
+            "to": today.strftime("%Y-%m-%d"),
+        }
+
+        try:
+            url = f"{settings.backend_v2_url}api/v2/children/{child_id}/sleep-summaries"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    result = await response.json()
+                    return result
+        except (aiohttp.ClientError, OSError) as e:
+            logger.error("Dashboard request failed: %s", e)
+            return
+
         child = await self.child_guard.assert_access(user, child_id)
 
         child_tz = ZoneInfo(child.timezone)
@@ -44,15 +70,6 @@ class Dashboard:
 
         if today is None:
             today = datetime.now().date()
-
-        # filters = {
-        #     "child_id": child.id,
-        #     "event_type_id": event_type_ids[1],
-        #     "occurred_at__gt": today,
-        # }
-        # today_wakeup_events = await self.event_repository.get(**filters)
-        # if not today_wakeup_events:
-        #     today = today - timedelta(days=1)
 
         isolator = CycleDayEventsIsolator()
         builder = CycleDaySleepData()
