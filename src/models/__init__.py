@@ -1,5 +1,6 @@
 from .access_token import AccessToken
 from .child import Child
+from .child_invite import ChildInvite
 from .event import Event
 from .user import User
 from .event_type import EventType
@@ -10,6 +11,7 @@ from .sleep_predict import SleepPredict
 __all__ = [
     "AccessToken",
     "Child",
+    "ChildInvite",
     "Event",
     "User",
     "EventType",

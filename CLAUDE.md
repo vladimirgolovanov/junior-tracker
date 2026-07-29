@@ -82,7 +82,7 @@ Tests use `tests/.env.test` with a separate test database (port 54321).
 
 ## Testing
 
-Tests use `pytest-asyncio`. `tests/conftest.py` sets up a session-scoped schema and per-test connection with rollback — no test data persists between tests. The test DB must exist before running tests. No mocking of the database; tests hit real PostgreSQL.
+Tests use `pytest-asyncio`. `tests/conftest.py` sets up a session-scoped schema and per-test connection with rollback — no test data persists between tests. The `test_db` database is created by `initdb/01-create-test-db.sql`, which Postgres runs on first container init. No mocking of the database; tests hit real PostgreSQL.
 
 ## Python environment
 

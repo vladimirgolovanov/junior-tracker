@@ -1,6 +1,7 @@
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -27,6 +28,7 @@ class Child(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     tg_chat_id: Mapped[str] = mapped_column(String, nullable=True)
     timezone: Mapped[str] = mapped_column(String, nullable=True)
+    birthday: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     users: Mapped[list["User"]] = relationship(
         "User",

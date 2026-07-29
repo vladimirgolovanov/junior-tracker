@@ -50,7 +50,9 @@ class Dashboard:
         }
 
         try:
-            url = f"{settings.backend_v2_url}api/v2/children/{child_id}/sleep-summaries"
+            url = (
+                f"{settings.backend_v2_url}internal/children/{child_id}/sleep-summaries"
+            )
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as response:
                     result = await response.json()

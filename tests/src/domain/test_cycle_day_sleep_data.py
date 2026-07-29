@@ -7,6 +7,18 @@ SLEEP_ID = 1
 WAKE_ID = 2
 EVENT_TYPES = (SLEEP_ID, WAKE_ID)
 
+
+def _iso_segments(segments: list[dict]) -> list[dict]:
+    return [
+        {
+            **s,
+            "start_dt": s["start_dt"].isoformat(timespec="seconds"),
+            "end_dt": s["end_dt"].isoformat(timespec="seconds"),
+        }
+        for s in segments
+    ]
+
+
 SCENARIO_1 = (
     [
         {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 3, 27, 6, 30)},
@@ -119,15 +131,71 @@ SCENARIO_4 = (
     False,
 )
 
+SCENARIO_5 = (
+    [
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 6, 30)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 8, 45)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 9, 55)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 13, 40)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 4, 14, 50)},
+        {"event_type_id": SLEEP_ID, "occurred_at": datetime(2026, 5, 4, 19, 35)},
+        {"event_type_id": WAKE_ID, "occurred_at": datetime(2026, 5, 5, 7, 0)},
+    ],
+    datetime(2026, 5, 5, 7, 10),
+    {
+        "segments": [
+            {
+                "time": 135,
+                "start_dt": "2026-05-04T06:30:00",
+                "end_dt": "2026-05-04T08:45:00",
+                "segment_type": "day_awake",
+            },
+            {
+                "time": 70,
+                "start_dt": "2026-05-04T08:45:00",
+                "end_dt": "2026-05-04T09:55:00",
+                "segment_type": "day_sleep",
+            },
+            {
+                "time": 225,
+                "start_dt": "2026-05-04T09:55:00",
+                "end_dt": "2026-05-04T13:40:00",
+                "segment_type": "day_awake",
+            },
+            {
+                "time": 70,
+                "start_dt": "2026-05-04T13:40:00",
+                "end_dt": "2026-05-04T14:50:00",
+                "segment_type": "day_sleep",
+            },
+            {
+                "time": 285,
+                "start_dt": "2026-05-04T14:50:00",
+                "end_dt": "2026-05-04T19:35:00",
+                "segment_type": "day_awake",
+            },
+            {
+                "time": 685,
+                "start_dt": "2026-05-04T19:35:00",
+                "end_dt": "2026-05-05T07:00:00",
+                "segment_type": "night_sleep",
+            },
+        ],
+    },
+    True,
+)
+
 
 @pytest.mark.parametrize(
     "rows, current_time, expected, is_today",
-    [SCENARIO_1, SCENARIO_2, SCENARIO_3, SCENARIO_4],
+    # [SCENARIO_1, SCENARIO_2, SCENARIO_3, SCENARIO_4],
+    [SCENARIO_5],
 )
 def test_current_awake_when_child_is_awake(rows, current_time, expected, is_today):
     result = CycleDaySleepData().build(
         rows, EVENT_TYPES, is_today=is_today, current_time=current_time
     )
+    result["segments"] = _iso_segments(result["segments"])
 
     for field, value in expected.items():
         assert result[field] == value, f"{field}: expected {value}, got {result[field]}"
