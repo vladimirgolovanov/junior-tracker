@@ -22,6 +22,7 @@ class FormulaAnalyticsService:
         user: User,
         date_from: date | None,
         date_to: date | None,
+        granularity: str = "day",
     ) -> list[dict]:
         child = await self.child_guard.assert_access(user, child_id)
 
@@ -29,7 +30,7 @@ class FormulaAnalyticsService:
         effective_date_from = date_from or (effective_date_to - timedelta(days=29))
 
         rows = await self.chart_repository.get_formula_daily(
-            child, effective_date_from, effective_date_to
+            child, effective_date_from, effective_date_to, granularity
         )
         return [
             {"date": row["day"], "total_volume": row["total_volume"], "count": row["count"]}

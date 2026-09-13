@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 
 from src.auth.users import current_active_user
 from src.models import User
-from src.schemas.event import EventCreate, EventCreateInternal, EventUpdate
+from src.schemas.event import EventCreate, EventCreateInternal, EventRead, EventUpdate
 from src.services.event import EventService
 from src.services.rabbit_publisher import RabbitPublisher, get_publisher
 
@@ -14,7 +14,7 @@ router = APIRouter()
 CurrentUser = Annotated[User, Depends(current_active_user)]
 
 
-@router.get("/")
+@router.get("/", response_model=list[EventRead])
 async def events(
     child_id: Annotated[int, Query()],
     user: CurrentUser,

@@ -103,12 +103,13 @@ class ChartRepository:
         child: Child,
         date_from: date,
         date_to: date,
+        granularity: str = "day",
     ) -> list[dict]:
         query = text("""
             SELECT
-                (e.occurred_at AT TIME ZONE :timezone)::date AS day,
-                COALESCE(SUM(e.volume), 0)                   AS total_volume,
-                COUNT(*)                                     AS count
+                date_trunc(:granularity, (e.occurred_at AT TIME ZONE :timezone))::date AS day,
+                COALESCE(SUM(e.volume), 0)                                             AS total_volume,
+                COUNT(*)                                                               AS count
             FROM events e
             JOIN event_types et ON e.event_type_id = et.id
             WHERE et.name = 'formula'
@@ -125,6 +126,7 @@ class ChartRepository:
                 "child_id": child.id,
                 "date_from": date_from,
                 "date_to": date_to,
+                "granularity": granularity,
             },
         )
         return [dict(row) for row in results.mappings().all()]

@@ -1,5 +1,7 @@
 import logging
+from datetime import timezone
 from typing import Optional, TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends
 from sqlalchemy import select, text
@@ -10,7 +12,7 @@ from src.models import User, Event
 from src.models.child import Child
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
-from src.schemas.event import EventCreateInternal, EventUpdate
+from src.schemas.event import EventCreateInternal, EventRead, EventUpdate
 from src.services.child_access import ChildAccessGuard
 from src.services.tg_msg_formatter import TgMsgFormatter
 
@@ -107,9 +109,22 @@ class EventService:
     ):
         return await self.repository.update_or_create(event, events_count=events_count)
 
-    async def get(self, user: User, child_id: int, **kwargs):
-        await self.child_guard.assert_access(user, child_id)
-        return await self.repository.get(child_id=child_id, **kwargs)
+    async def get(self, user: User, child_id: int, **kwargs) -> list[EventRead]:
+        child = await self.child_guard.assert_access(user, child_id)
+        events = await self.repository.get(child_id=child_id, **kwargs)
+
+        tz = ZoneInfo(child.timezone or "UTC")
+        result: list[EventRead] = []
+        for event in events:
+            # Do not mutate the ORM instance: the request-scoped session
+            # commits on success, which would persist a converted value.
+            read = EventRead.model_validate(event)
+            occurred = event.occurred_at
+            if occurred.tzinfo is None:
+                occurred = occurred.replace(tzinfo=timezone.utc)
+            read.occurred_at = occurred.astimezone(tz).replace(tzinfo=None)
+            result.append(read)
+        return result
 
     async def update(
         self,
