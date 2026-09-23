@@ -35,9 +35,15 @@ class ChildUpdate(BaseModel):
         return _parse_hhmm(value)
 
     @model_validator(mode="after")
-    def _both_or_neither(self) -> "ChildUpdate":
+    def _validate_day_boundaries(self) -> "ChildUpdate":
         if (self.day_start is None) != (self.day_end is None):
             raise ValueError("day_start and day_end must be provided together")
+        if (
+            self.day_start is not None
+            and self.day_end is not None
+            and self.day_start >= self.day_end
+        ):
+            raise ValueError("day_start must be earlier than day_end")
         return self
 
 

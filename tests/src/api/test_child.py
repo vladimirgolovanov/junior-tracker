@@ -67,6 +67,19 @@ async def test_update_invalid_format_is_rejected(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("start,end", [("20:00", "06:00"), ("12:00", "12:00")])
+async def test_update_start_not_before_end_is_rejected(
+    client, test_child, auth_override, start, end
+):
+    resp = await client.patch(
+        f"/api/children/{test_child.id}",
+        json={"day_start": start, "day_end": end},
+    )
+
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_update_other_field_leaves_boundaries_untouched(
     client, test_child, auth_override
 ):
