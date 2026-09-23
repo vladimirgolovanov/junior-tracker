@@ -5,6 +5,8 @@ import aiohttp
 from sqlalchemy import insert
 
 from src.config import settings
+# DEPRECATED: uses global DAY_END instead of the child's per-child day_end.
+# Should be migrated to per-child boundaries.
 from src.constants.sleep import DAY_END
 from src.db_helper import async_session_maker
 from src.models import SleepPredict

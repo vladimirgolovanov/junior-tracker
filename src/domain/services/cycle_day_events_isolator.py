@@ -1,3 +1,5 @@
+# DEPRECATED: uses global DAY_START instead of the child's per-child day_start.
+# Should be migrated to per-child boundaries.
 from src.constants.sleep import DAY_START
 
 

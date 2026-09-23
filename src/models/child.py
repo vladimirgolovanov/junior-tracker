@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import date, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Table, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -29,6 +29,9 @@ class Child(Base):
     tg_chat_id: Mapped[str] = mapped_column(String, nullable=True)
     timezone: Mapped[str] = mapped_column(String, nullable=True)
     birthday: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Per-child "day" boundaries (naive local wall-clock time). Null = not configured.
+    day_start: Mapped[time | None] = mapped_column(Time, nullable=True)
+    day_end: Mapped[time | None] = mapped_column(Time, nullable=True)
 
     users: Mapped[list["User"]] = relationship(
         "User",

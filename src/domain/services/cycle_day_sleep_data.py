@@ -1,5 +1,7 @@
 from datetime import datetime
 
+# DEPRECATED: uses global DAY_START/DAY_END instead of the child's per-child
+# day_start/day_end. Should be migrated to per-child boundaries.
 from src.constants.sleep import DAY_START, DAY_END
 from src.domain.services.sleep_summary_calculator import SleepSummaryCalculator
 
