@@ -10,6 +10,7 @@ from src.config import settings
 from src.constants.sleep import DAY_END
 from src.db_helper import async_session_maker
 from src.models import SleepPredict
+from src.repositories.child import ChildRepository
 from src.repositories.event import EventRepository
 from src.repositories.event_type import EventTypeRepository
 from src.models.event import Event
@@ -29,6 +30,10 @@ class Predictor:
             return
 
         async with async_session_maker() as db:
+            child = await ChildRepository(db).find(child_id)
+            if child is None or not child.predict_enabled:
+                return
+
             self.event_type_repository = EventTypeRepository(db)
             self.event_repository = EventRepository(db)
 

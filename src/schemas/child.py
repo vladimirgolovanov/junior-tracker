@@ -28,6 +28,7 @@ class ChildUpdate(BaseModel):
     birthday: date | None = None
     day_start: time | None = None
     day_end: time | None = None
+    predict_enabled: bool | None = None
 
     @field_validator("day_start", "day_end", mode="before")
     @classmethod
@@ -57,6 +58,7 @@ class ChildRead(BaseModel):
     birthday: date | None = None
     day_start: time | None = None
     day_end: time | None = None
+    predict_enabled: bool = False
 
     @field_serializer("day_start", "day_end")
     def _serialize_hhmm(self, value: time | None) -> str | None:

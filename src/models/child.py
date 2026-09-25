@@ -1,7 +1,7 @@
 from datetime import date, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Table, Time
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Table, Time, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -32,6 +32,10 @@ class Child(Base):
     # Per-child "day" boundaries (naive local wall-clock time). Null = not configured.
     day_start: Mapped[time | None] = mapped_column(Time, nullable=True)
     day_end: Mapped[time | None] = mapped_column(Time, nullable=True)
+    # Per-child switch for sleep prediction. Disabled by default; enable explicitly.
+    predict_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false"), default=False
+    )
 
     users: Mapped[list["User"]] = relationship(
         "User",
