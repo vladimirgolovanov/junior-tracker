@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     token_lifetime_seconds: int = 60 * 60 * 24 * 14
     predict_url: Optional[AnyHttpUrl] = None
     backend_v2_url: Optional[AnyHttpUrl] = None
+
+    @field_validator("predict_url", "backend_v2_url", mode="before")
+    @classmethod
+    def _blank_url_to_none(cls, value: object) -> object:
+        # Treat an empty/blank env value (e.g. PREDICT_URL=) as "not configured".
+        if isinstance(value, str) and value.strip() == "":
+            return None
+        return value
 
 
 settings = Settings()
