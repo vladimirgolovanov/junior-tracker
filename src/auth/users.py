@@ -83,7 +83,7 @@ def get_database_strategy(
 ) -> DatabaseStrategy:
     return DatabaseStrategy(
         access_token_db,
-        lifetime_seconds=60 * 60 * 24 * 14,
+        lifetime_seconds=60 * 60 * 24 * 90,
     )  # todo: config
 
 
